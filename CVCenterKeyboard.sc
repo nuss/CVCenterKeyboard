@@ -2,7 +2,7 @@ CVCenterKeyboard {
 	classvar <all;
 	var <synthDefName, <outArg, <keyboardArg, <velocArg, <bendArg, <widgetsPrefix, <>srcID;
 	var <>bendSpec, <>out, <server;
-	var outProxy;
+	var <outProxy;
 	var on, off, bend, namesCVs;
 	var <>debug = false;
 
@@ -184,18 +184,18 @@ CVCenterKeyboard {
 	}
 
 	addOutProxy { |numChannels=2, useNdef=false|
+		var name = ("synthDefName" ++ "Out").asSymbol;
 		this.out_(Bus.audio(server, numChannels));
 		if (useNdef.not) {
 			outProxy = NodeProxy.audio(server, numChannels);
 		} {
-			Ndef(\kbOut).mold(numChannels, \audio, \elastic);
-			outProxy = Ndef(\kbOut);
+			Ndef(name).mold(numChannels, \audio, \elastic);
+			outProxy = Ndef(name);
 		};
 		outProxy.source = {
 			In.ar(this.out, numChannels)
 		};
 		outProxy.play;
-		^outProxy;
 	}
 
 	removeOutProxy { |out=0|
