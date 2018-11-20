@@ -1,13 +1,13 @@
 CVCenterKeyboard {
 	classvar <all;
-	var <synthDefName, <outArg, <keyboardArg, <velocArg, <bendArg, <widgetsPrefix;
+	var <synthDefName, <outArg, <keyboardArg, <velocArg, <bendArg, <widgetsPrefix, <>srcID;
 	var <>bendSpec, <>out, <server;
 	var outProxy;
 	var on, off, bend, namesCVs;
 	var <>debug = false;
 
-	*new { |synthDefName, outArg = \out, keyboardArg = \freq, velocArg = \veloc, bendArg = \bend, widgetsPrefix = \kb, connectMidi = true|
-		^super.newCopyArgs(synthDefName, outArg, keyboardArg, velocArg, bendArg, widgetsPrefix).init(connectMidi);
+	*new { |synthDefName, outArg = \out, keyboardArg = \freq, velocArg = \veloc, bendArg = \bend, widgetsPrefix = \kb, srcID, connectMidi = true|
+		^super.newCopyArgs(synthDefName, outArg, keyboardArg, velocArg, bendArg, widgetsPrefix, srcID).init(connectMidi);
 	}
 
 	init { |connectMidi|
@@ -53,7 +53,7 @@ CVCenterKeyboard {
 
 	// keyboardArg is the arg that will be set through playing the keyboard
 	// bendArg will be the arg that's set through the pitch bend wheel
-	setUpControls { |tab, prefix, outControl, keyboardControl, velocControl, bendControl, theServer, out=0, deactivateDefaultWidgetActions = true|
+	setUpControls { |tab, prefix, outControl, keyboardControl, velocControl, bendControl, theServer, out=0, deactivateDefaultWidgetActions = true, srcID|
 		var testSynth, notesEnv;
 		var args = [];
 
@@ -68,6 +68,7 @@ CVCenterKeyboard {
 		keyboardControl !? { keyboardArg = keyboardControl };
 		velocControl !? { velocArg = velocControl };
 		bendControl !? { bendArg = bendControl };
+		srcID !? { this.srcID = srcID };
 
 		this.out ?? { this.out = out };
 
@@ -159,20 +160,26 @@ CVCenterKeyboard {
 	prInitKeyboard {
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var argsValues = [keyboardArg, num.midicps, velocArg, veloc * 0.005, outArg, this.out] ++ namesCVs.deepCollect(2, _.value);
-			if (this.debug) { "on[num: %]: %\n".postf(num, argsValues) };
-			CVCenter.scv[synthDefName][num] = Synth(synthDefName, argsValues);
+			if (this.debug) { "on[num: %]: %\n\nnum: %, chan: %, src: %\n".postf(num, argsValues, num, chan, src) };
+			if (srcID.isNil or: { this.srcID.notNil and: this.srcID == src }) {
+				CVCenter.scv[synthDefName][num] = Synth(synthDefName, argsValues);
+			}
 		});
 
 		off = MIDIFunc.noteOff({ |veloc, num, chan, src|
 			if (this.debug) { "off[num: %]\n".postf(num) };
-			CVCenter.scv[synthDefName][num].release;
+			if (srcID.isNil or: { this.srcID.notNil and: this.srcID == src }) {
+				CVCenter.scv[synthDefName][num].release;
+			}
 		});
 
 		bend = MIDIFunc.bend({ |bendVal, chan, src|
 			if (this.debug) { "bend: %\n".postf(bendVal) };
-			CVCenter.scv[synthDefName].do({ |synth, i|
-				synth.set(bendArg, (i + bendSpec.map(bendVal / 16383)).midicps)
-			})
+			if (srcID.isNil or: { this.srcID.notNil and: this.srcID == src }) {
+				CVCenter.scv[synthDefName].do({ |synth, i|
+					synth.set(bendArg, (i + bendSpec.map(bendVal / 16383)).midicps)
+				})
+			}
 		});
 	}
 
