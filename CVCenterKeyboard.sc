@@ -3,6 +3,7 @@ CVCenterKeyboard {
 	var <synthDefName, <outArg, <keyboardArg, <velocArg, <bendArg, <widgetsPrefix, <>srcID;
 	var <>bendSpec, <>out, <server;
 	var <outProxy;
+	var <sample = false, <sampleEvents;
 	var on, off, bend, namesCVs;
 	var <>debug = false;
 
@@ -158,11 +159,23 @@ CVCenterKeyboard {
 
 	// private
 	prInitKeyboard {
+		var onTime, offTime;
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var argsValues = [keyboardArg, num.midicps, velocArg, veloc * 0.005, outArg, this.out] ++ namesCVs.deepCollect(2, _.value);
-			if (this.debug) { "on[num: %]: %\n\nnum: %, chan: %, src: %\n".postf(num, argsValues, num, chan, src) };
+			if (this.debug) { "on[num: %]: %\n\nchan: %, src: %\n".postf(num, argsValues, chan, src) };
 			if (srcID.isNil or: { this.srcID.notNil and: this.srcID == src }) {
 				CVCenter.scv[synthDefName][num] = Synth(synthDefName, argsValues);
+			};
+			if (sample) {
+				sampleEvents ?? { sampleEvents = ()!128 };
+				argsValues.pairsDo { |k, v|
+					sampleEvents[num][k] ?? { sampleEvents[num].put(k, []) };
+					sampleEvents[num][k] = sampleEvents[num][k].add(v);
+				};
+				sampleEvents.do { |e|
+					e.instrument ?? {e.instrument = synthDefName }
+				};
+				onTime = Main.elapsedTime;
 			}
 		});
 
@@ -170,6 +183,14 @@ CVCenterKeyboard {
 			if (this.debug) { "off[num: %]\n".postf(num) };
 			if (srcID.isNil or: { this.srcID.notNil and: this.srcID == src }) {
 				CVCenter.scv[synthDefName][num].release;
+			};
+			if (sample) {
+				offTime = Main.elapsedTime;
+				sampleEvents !? {
+					if (sampleEvents[num].isEmpty.not and: { onTime.notNil }) {
+						sampleEvents[num].dur = offTime - onTime;
+					}
+				}
 			}
 		});
 
@@ -209,5 +230,12 @@ CVCenterKeyboard {
 		bend !? { bend.free };
 		CVCenter.scv[synthDefName].do(_.release);
 		CVCenter.scv.removeAt(synthDefName);
+	}
+
+	sample_ { |onOff|
+		sample = onOff;
+		if (sample == false) {
+			"sample turned off, should start playing now".postln;
+		}
 	}
 }
