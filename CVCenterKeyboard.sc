@@ -4,7 +4,7 @@ CVCenterKeyboard {
 	var <>bendSpec, <>out, <server;
 	var <wdgtNames, <outProxy;
 	var <sample = false, <sampleEvents, <pdef;
-	var on, off, bend, namesCVs, onTimes, offTimes;
+	var on, off, bend, namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <>debug = false;
 
 	*new { |synthDefName, outArg = \out, keyboardArg = \freq, velocArg = \veloc, bendArg = \bend, widgetsPrefix = \kb, srcID, connectMidi = true|
@@ -167,6 +167,11 @@ CVCenterKeyboard {
 				onTimes[num] = Main.elapsedTime;
 				argsValues.pairsDo { |k, v|
 					sampleEvents[num][k] ?? { sampleEvents[num].put(k, []) };
+					[v.size, CVCenter.cvWidgets[(widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol].class].postln;
+					if (v.size == 2) { "v: %, cv.lo: %, cv.hi: %\n".postf(v,
+						CVCenter.at((widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol).lo.value,
+						CVCenter.at((widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol).hi.value
+					)};
 					sampleEvents[num][k] = sampleEvents[num][k].add(v);
 				};
 				sampleEvents[num].dur ?? {
@@ -182,7 +187,6 @@ CVCenterKeyboard {
 				CVCenter.scv[synthDefName][num].release;
 			};
 			if (sample) {
-				// TODO: offTime probably has to be an array nil!128 and an instance var
 				offTimes[num] = Main.elapsedTime;
 				sampleEvents[num].dur ?? {
 					sampleEvents[num].put(\dur, []);
@@ -230,10 +234,24 @@ CVCenterKeyboard {
 	}
 
 	sample_ { |onOff|
-		var pbinds, items, pbproxy;
+		var pbinds, items, pbproxy, last;
 		sample = onOff;
 		if (sample == false) {
 			"sample turned off, should start playing now".postln;
+			sampleEnd = Main.elapsedTime;
+			sampleEvents.do { |e, num|
+				// add last event - not considered within noteOn, notOff
+				e.dur !? {
+					// [num, this.prDurSum(e.dur)].postln;
+					if (e.dur.last.isRest) {
+						last = sampleEnd - onTimes[num];
+					} {
+						last = Rest(sampleEnd - onTimes[num]);
+					};
+					e.dur = e.dur.add(last);
+					// [num, this.prDurSum(e.dur)].postln;
+				}
+			};
 			pbinds = sampleEvents.collect { |slot, num|
 				if (slot.isEmpty.not) {
 					items = [\instrument, synthDefName, keyboardArg, num.midicps]
@@ -241,23 +259,35 @@ CVCenterKeyboard {
 					// items.postcs; "\n\n".postln;
 					pbproxy = Pbind.new.patternpairs_(items);
 				}
-			}.takeThese(_.isNil);
-			pbinds.do { |pb| pb.patternpairs.postln };
+			}.postln.takeThese(_.isNil);
+			// pbinds.do { |pb| pb.patternpairs.postln };
 			pdef = Pdef(synthDefName, Ppar(pbinds, inf));
 			pdef.play;
+			#sampleStart, sampleEnd = nil!2;
 		} {
-			// starttime, absolute
-			#onTimes, offTimes = Main.elapsedTime!128!2;
-			// the array holding all events for all 128 midi keys
-			sampleEvents = ()!128;
-			// all keys should be registered with a Rest except the ones currently playing
-			// .sample_(true) is executed
+			sampleStart = Main.elapsedTime;
+			this.resetSampling;
 		}
 	}
 
+	prDurSum { |durs|
+		var length = 0;
+		durs.do { |d|
+			if (d.isRest) {
+				length = length + d.dur;
+			} {
+				length = length + d;
+			}
+		}
+		^length;
+	}
+
 	resetSampling {
-		sampleEvents = nil;
-		#onTimes, offTimes = Array.newClear(128)!2;
-		// TODO: clear Pdef
+		// starttime, absolute
+		#onTimes, offTimes = Main.elapsedTime!128!2;
+		// the array holding all events for all 128 midi keys
+		sampleEvents = ()!128;
+		// all keys should be registered with a Rest except the ones currently playing
+		// .sample_(true) is executed
 	}
 }
