@@ -166,13 +166,23 @@ CVCenterKeyboard {
 			if (sample) {
 				onTimes[num] = Main.elapsedTime;
 				argsValues.pairsDo { |k, v|
-					sampleEvents[num][k] ?? { sampleEvents[num].put(k, []) };
-					[v.size, CVCenter.cvWidgets[(widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol].class].postln;
+					sampleEvents[num][k] ?? {
+						if (v.size > 1) {
+							sampleEvents[num].put(k, [[]]);
+						} {
+							sampleEvents[num].put(k, [])
+						}
+					};
+					/*[v.size, CVCenter.cvWidgets[(widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol].class].postln;
 					if (v.size == 2) { "v: %, cv.lo: %, cv.hi: %\n".postf(v,
 						CVCenter.at((widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol).lo.value,
 						CVCenter.at((widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol).hi.value
-					)};
-					sampleEvents[num][k] = sampleEvents[num][k].add(v);
+					)};*/
+					if (v.size > 1) {
+						sampleEvents[num][k] = sampleEvents[num][k][0].add(v);
+					} {
+						sampleEvents[num][k] = sampleEvents[num][k].add(v);
+					};
 				};
 				sampleEvents[num].dur ?? {
 					sampleEvents[num].put(\dur, []);
@@ -238,6 +248,7 @@ CVCenterKeyboard {
 		sample = onOff;
 		if (sample == false) {
 			"sample turned off, should start playing now".postln;
+			pdef ?? { pdef = [] };
 			sampleEnd = Main.elapsedTime;
 			sampleEvents.do { |e, num|
 				// add last event - not considered within noteOn, notOff
@@ -246,7 +257,7 @@ CVCenterKeyboard {
 					if (e.dur.last.isRest) {
 						last = sampleEnd - onTimes[num];
 					} {
-						last = Rest(sampleEnd - onTimes[num]);
+						last = Rest(sampleEnd - offTimes[num]);
 					};
 					e.dur = e.dur.add(last);
 					// [num, this.prDurSum(e.dur)].postln;
@@ -259,35 +270,30 @@ CVCenterKeyboard {
 					// items.postcs; "\n\n".postln;
 					pbproxy = Pbind.new.patternpairs_(items);
 				}
-			}.postln.takeThese(_.isNil);
+			}./*postln.*/takeThese(_.isNil);
 			// pbinds.do { |pb| pb.patternpairs.postln };
-			pdef = Pdef(synthDefName, Ppar(pbinds, inf));
-			pdef.play;
+			pdef = pdef.add(Pdef((synthDefName ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
+			pdef.last.play;
 			#sampleStart, sampleEnd = nil!2;
 		} {
 			sampleStart = Main.elapsedTime;
-			this.resetSampling;
+			this.prResetSampling;
 		}
 	}
 
 	prDurSum { |durs|
-		var length = 0;
-		durs.do { |d|
-			if (d.isRest) {
-				length = length + d.dur;
-			} {
-				length = length + d;
-			}
-		}
-		^length;
+		^durs.sum { |num| if (num.isRest) { num.dur } { num }}
 	}
 
-	resetSampling {
+	prResetSampling {
 		// starttime, absolute
 		#onTimes, offTimes = Main.elapsedTime!128!2;
 		// the array holding all events for all 128 midi keys
 		sampleEvents = ()!128;
-		// all keys should be registered with a Rest except the ones currently playing
-		// .sample_(true) is executed
+	}
+
+	sampleClear { |...indices|
+		indices ?? { pdef.do(_.clear) };
+		indices.do(pdef[_].clear);
 	}
 }
