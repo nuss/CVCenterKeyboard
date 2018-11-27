@@ -156,7 +156,6 @@ CVCenterKeyboard {
 
 	// private
 	prInitKeyboard {
-		var onTime, offTime;
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var argsValues = [keyboardArg, num.midicps, velocArg, veloc * 0.005, outArg, this.out] ++ namesCVs.deepCollect(2, _.value);
 			if (this.debug) { "on[num: %]: %\n\nchan: %, src: %\n".postf(num, argsValues, chan, src) };
@@ -239,6 +238,7 @@ CVCenterKeyboard {
 		CVCenter.scv.removeAt(synthDefName);
 	}
 
+	// start/stop sampling
 	sample_ { |onOff|
 		var pbinds, items, pbproxy, last;
 		sample = onOff;
