@@ -1,5 +1,5 @@
 CVCenterKeyboard {
-	classvar <all;
+	classvar <allKeyboards;
 	var <synthDefName, <outArg, <keyboardArg, <velocArg, <bendArg, <widgetsPrefix, <>srcID;
 	var <>bendSpec, <>out, <server;
 	var <wdgtNames, <outProxy;
@@ -26,11 +26,11 @@ CVCenterKeyboard {
 			).throw;
 		};
 
-		all ?? {
-			all = ();
+		allKeyboards ?? {
+			allKeyboards = ();
 		};
 
-		all.put(synthDefName, this);
+		allKeyboards.put(synthDefName, this);
 
 		this.bendSpec ?? {
 			this.bendSpec = ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz");
@@ -173,13 +173,9 @@ CVCenterKeyboard {
 							sampleEvents[num].put(k, [])
 						}
 					};
-					/*[v.size, CVCenter.cvWidgets[(widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol].class].postln;
-					if (v.size == 2) { "v: %, cv.lo: %, cv.hi: %\n".postf(v,
-						CVCenter.at((widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol).lo.value,
-						CVCenter.at((widgetsPrefix ++ k.asString[0].toUpper ++ k.asString[1..]).asSymbol).hi.value
-					)};*/
 					if (v.size > 1) {
-						sampleEvents[num][k] = sampleEvents[num][k][0].add(v);
+						[k, v, num, sampleEvents[num][k]].postln;
+						sampleEvents[num][k][0] = sampleEvents[num][k][0].add(v);
 					} {
 						sampleEvents[num][k] = sampleEvents[num][k].add(v);
 					};

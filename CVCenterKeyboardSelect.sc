@@ -1,5 +1,5 @@
 CVCenterKeyboardSelect {
-	classvar <all;
+	classvar <allSelects;
 	var <srcID, <keyboardList;
 	var <window;
 
@@ -8,8 +8,8 @@ CVCenterKeyboardSelect {
 	}
 
 	init {
-		keyboardList = CVCenterKeyboard.all.keys.asArray.sort;
-		CVCenter.use(\keyboards, [0, keyboardList.size-1, \lin, 1.0, 0], 0, \default, svItems: keyboardList);
+		keyboardList = CVCenterKeyboard.allKeyboards.keys.asArray.sort;
+		CVCenter.use(\keyboards, [0, keyboardList.lastIndex, \lin, 1.0, 0], 0, \default, svItems: keyboardList);
 	}
 
 	srcID_ { |uid|
