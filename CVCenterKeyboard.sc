@@ -167,18 +167,18 @@ CVCenterKeyboard {
 				onTimes[num] = Main.elapsedTime;
 				argsValues.pairsDo { |k, v|
 					sampleEvents[num][k] ?? {
-						/*if (v.size > 1) {
+						if (v.size > 1) {
 							sampleEvents[num].put(k, [[]]);
-						} {*/
+						} {
 							sampleEvents[num].put(k, [])
-						// }
+						}
 					};
-					/*if (v.size > 1) {
-						[k, v, num, sampleEvents[num][k]].postln;
+					if (v.size > 1) {
+						// [k, v, num, sampleEvents[num][k]].postln;
 						sampleEvents[num][k][0] = sampleEvents[num][k][0].add(v);
-					} {*/
+					} {
 						sampleEvents[num][k] = sampleEvents[num][k].add(v);
-					// };
+					};
 				};
 				sampleEvents[num].dur ?? {
 					sampleEvents[num].put(\dur, []);
@@ -243,9 +243,9 @@ CVCenterKeyboard {
 		var pbinds, items, pbproxy, last;
 		sample = onOff;
 		if (sample == false) {
+			sampleEnd = Main.elapsedTime;
 			"sample turned off, should start playing now".postln;
 			pdef ?? { pdef = [] };
-			sampleEnd = Main.elapsedTime;
 			sampleEvents.do { |e, num|
 				// add last event - not considered within noteOn, notOff
 				e.dur !? {
@@ -261,7 +261,8 @@ CVCenterKeyboard {
 			};
 			pbinds = sampleEvents.collect { |slot, num|
 				if (slot.isEmpty.not) {
-					items = [\instrument, (synthDefName ++ "_mono").asSymbol, keyboardArg, num.midicps]
+					// items = [\instrument, (synthDefName ++ "_mono").asSymbol, keyboardArg, num.midicps]
+					items = [\instrument, synthDefName, keyboardArg, num.midicps]
 					++ slot.collect(Pseq(_, inf)).asPairs;
 					// items.postcs; "\n\n".postln;
 					pbproxy = Pbind.new.patternpairs_(items);
@@ -288,8 +289,11 @@ CVCenterKeyboard {
 		sampleEvents = ()!128;
 	}
 
-	sampleClear { |...indices|
-		indices ?? { pdef.do(_.clear) };
-		indices.do(pdef[_].clear);
+	clearSamples { |...indices|
+		if (indices.isEmpty) {
+			pdef.do { |p| p.clear }
+		} {
+			indices.do { |i| pdef[i].clear };
+		}
 	}
 }
