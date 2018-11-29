@@ -98,10 +98,16 @@ CVCenterKeyboard {
 			CVCenter.cvWidgets[wdgtName] !? {
 				if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
 					#[lo, hi].do { |slot|
+						var setString;
+						if (slot == \lo) {
+							setString = "[cv.value, CVCenter.at('%').hi]".format(wdgtName);
+						} {
+							setString = "[CVCenter.at('%').lo, cv.value]".format(wdgtName);
+						};
 						CVCenter.addActionAt(
 							wdgtName, 'keyboard set arg',
-							"{ |cv| CVCenter.scv['%'].do { |synth| synth !? { synth.set('%', cv.value) }}; }"
-							.format(synthDefName, name), slot);
+							"{ |cv| CVCenter.scv['%'].do { |synth| synth !? { synth.set('%', %) }}; }"
+							.format(synthDefName, name, setString), slot);
 						CVCenter.activateActionAt(wdgtName, \default, deactivateDefaultActions.not, slot);
 					}
 				} {
@@ -169,7 +175,7 @@ CVCenterKeyboard {
 						sampleEvents[num].put(k, [])
 					};
 					if (v.size > 1) {
-						// [k, v, num, sampleEvents[num][k]].postln;
+						// multichannel-expand arrayed args properly
 						sampleEvents[num][k] = sampleEvents[num][k].add(Ref(v));
 					} {
 						sampleEvents[num][k] = sampleEvents[num][k].add(v);
@@ -240,7 +246,6 @@ CVCenterKeyboard {
 		sample = onOff;
 		if (sample == false) {
 			sampleEnd = Main.elapsedTime;
-			"sample turned off, should start playing now".postln;
 			pdef ?? { pdef = [] };
 			sampleEvents.do { |e, num|
 				// add last event - not considered within noteOn, notOff
@@ -257,9 +262,14 @@ CVCenterKeyboard {
 			};
 			pbinds = sampleEvents.collect { |slot, num|
 				if (slot.isEmpty.not) {
-					// items = [\instrument, (synthDefName ++ "_mono").asSymbol, keyboardArg, num.midicps]
 					items = [\instrument, synthDefName, keyboardArg, num.midicps]
 					++ slot.collect(Pseq(_, inf)).asPairs;
+					/*++ slot.collect { |v, k|
+						if (CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).notNil) {
+							if (v.size < 2) {
+							Pseq(CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).value_(v), inf)}
+						}
+					};*/
 					// items.postcs; "\n\n".postln;
 					pbproxy = Pbind.new.patternpairs_(items);
 				}
@@ -268,9 +278,11 @@ CVCenterKeyboard {
 			pdef = pdef.add(Pdef((synthDefName ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
 			pdef.last.play;
 			#sampleStart, sampleEnd = nil!2;
+			"\nsampling keyboard events finished, should start playing now\n".inform;
 		} {
 			sampleStart = Main.elapsedTime;
 			this.prResetSampling;
+			"\nsampling keyboard events started\n".inform;
 		}
 	}
 
