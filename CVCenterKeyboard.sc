@@ -213,7 +213,7 @@ CVCenterKeyboard {
 	}
 
 	addOutProxy { |numChannels=2, useNdef=false|
-		var name = ("synthDefName" ++ "Out").asSymbol;
+		var name = (synthDefName ++ "Out").asSymbol;
 		this.out_(Bus.audio(server, numChannels));
 		if (useNdef.not) {
 			outProxy = NodeProxy.audio(server, numChannels);
