@@ -274,11 +274,15 @@ CVCenterKeyboard {
 					pbproxy = Pbind.new.patternpairs_(items);
 				}
 			}./*postln.*/takeThese(_.isNil);
-			// pbinds.do { |pb| pb.patternpairs.postln };
-			pdef = pdef.add(Pdef((synthDefName ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
-			pdef.last.play;
-			#sampleStart, sampleEnd = nil!2;
-			"\nsampling keyboard events finished, should start playing now\n".inform;
+			if (pbinds.isEmpty.not) {
+				// pbinds.do { |pb| pb.patternpairs.postln };
+				pdef = pdef.add(Pdef((synthDefName ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
+				pdef.last.play;
+				#sampleStart, sampleEnd = nil!2;
+				"\nsampling keyboard events finished, should start playing now\n".inform;
+			} {
+				"\nnothing recorded, please try again\n".inform;
+			}
 		} {
 			sampleStart = Main.elapsedTime;
 			this.prResetSampling;
