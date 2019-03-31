@@ -176,7 +176,7 @@ CVCenterKeyboard {
 					};
 					if (v.size > 1) {
 						// multichannel-expand arrayed args properly
-						sampleEvents[num][k] = sampleEvents[num][k].add(Ref(v));
+						sampleEvents[num][k] = sampleEvents[num][k].add([(v)]);
 					} {
 						sampleEvents[num][k] = sampleEvents[num][k].add(v);
 					};
@@ -192,6 +192,7 @@ CVCenterKeyboard {
 			if (this.debug) { "off[num: %]\n".postf(num) };
 			if (srcID.isNil or: { this.srcID.notNil and: this.srcID == src }) {
 				CVCenter.scv[synthDefName][num].release;
+				CVCenter.scv[synthDefName][num] = nil;
 			};
 			if (sample) {
 				offTimes[num] = Main.elapsedTime;
@@ -270,7 +271,6 @@ CVCenterKeyboard {
 							Pseq(CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).value_(v), inf)}
 						}
 					};*/
-					// items.postcs; "\n\n".postln;
 					pbproxy = Pbind.new.patternpairs_(items);
 				}
 			}./*postln.*/takeThese(_.isNil);
