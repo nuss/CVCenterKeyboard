@@ -71,9 +71,10 @@ CVCenterKeyboard {
 		var testSynth, notesEnv;
 		var args = [];
 
-		currentSynthDef = synthDefName.asSymbol;
+		synthDefName = synthDefName.asSymbol;
+		currentSynthDef = synthDefName;
 
-		synthDefNames.indexOf(synthDefName.asSymbol) ?? {
+		synthDefNames.indexOf(synthDefName) ?? {
 			Error("SynthDef '%' must be added to CVCenterKeyboard instance '%' before using it".format(synthDefName, name)).throw;
 		};
 
@@ -126,7 +127,7 @@ CVCenterKeyboard {
 
 		server.waitForBoot {
 			// SynthDef *should* have an \amp arg, otherwise it will sound for moment
-			testSynth = Synth(name.asSymbol);
+			testSynth = Synth(synthDefName);
 			// \gate will be set internally
 			testSynth.cvcGui(
 				prefix: controls[synthDefName].prefix,
