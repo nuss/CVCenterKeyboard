@@ -9,7 +9,9 @@ CVCenterKeyboard {
 	var <>debug = false;
 
 	*initClass {
-		Spec.add(\midiBend, ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz"));
+		StartUp.add {
+			Spec.add(\midiBend, ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz"));
+		}
 	}
 
 	*new { |name|
@@ -22,32 +24,12 @@ CVCenterKeyboard {
 		synthDefNames ?? { synthDefNames = [] };
 	}
 
-	addSynthDef { |synthDefName, outArg = \out, keyBoardArg = \freq, velocArg = \veloc, bendArg = \bend, widgetsPrefix = \kb, srcID, connectMidi = true|
-		SynthDescLib.at(synthDefName) ?? {
-			Error(
-				"The SynthDef '%' does not exist".format(synthDefName)
-			).throw;
-		};
-
-		if (SynthDescLib.at(synthDefName).hasGate.not) {
-			Error(
-				"The given SynthDef does not provide a 'gate' argument and can not be used."
-			).throw;
-		};
-
-		synthDefNames[synthDefName.asSymbol] ?? {
-			synthDefNames = synthDefNames.add(synthDefName.asSymbol);
-		};
-
-		this.bendSpec ?? {
-			this.bendSpec = \midiBend.asSpec;
-		};
-
-		this.prMidiInit(synthDefName, false);
+	addSynthDef { |synthDefName, connectMidi = false|
+		this.initSynthDef(synthDefName, connectMidi);
 	}
 
-	*newSynthDef { |name, synthDefName, outArg = \out, keyboardArg = \freq, velocArg = \veloc, bendArg = \bend, widgetsPrefix = \kb, srcID, connectMidi = true|
-		^super.newCopyArgs(outArg, keyboardArg, velocArg, bendArg, widgetsPrefix, srcID).initSynthDef(name, synthDefName, connectMidi);
+	*newSynthDef { |name, synthDefName, connectMidi = true|
+		^super.newCopyArgs(name).initSynthDef(synthDefName, connectMidi);
 	}
 
 	initSynthDef { |synthDefName, connectMidi|
@@ -63,6 +45,7 @@ CVCenterKeyboard {
 			).throw;
 		};
 
+		synthDefNames ?? { synthDefNames = [] };
 		synthDefNames.indexOf(synthDefName) ?? {
 			synthDefNames = synthDefNames.add(synthDefName.asSymbol);
 		};
@@ -90,8 +73,8 @@ CVCenterKeyboard {
 
 		currentSynthDef = synthDefName.asSymbol;
 
-		synthDefNames.indexOf(name.asSymbol) ?? {
-			Error("SynthDef '%' must be added to CVCenterKeyboard instance '%' before it using".format(synthDefName, name)).throw;
+		synthDefNames.indexOf(synthDefName.asSymbol) ?? {
+			Error("SynthDef '%' must be added to CVCenterKeyboard instance '%' before using it".format(synthDefName, name)).throw;
 		};
 
 		if (theServer.isNil) {
@@ -259,15 +242,19 @@ CVCenterKeyboard {
 	prInitKeyboard { |synthDefName|
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var argsValues = [
-				keyboardArg,
+				controls[synthDefName].keyboardControl,
 				num.midicps,
-				velocArg,
+				controls[synthDefName].velocControl,
 				veloc * 0.005,
-				outArg,
-				this.out
+				controls[synthDefName].outControl,
+				controls[synthDefName].out
 			] ++ namesCVs.deepCollect(2, _.value);
 			if (this.debug) { "on[num: %]: %\n\nchan: %, src: %\n".postf(num, argsValues, chan, src) };
-			if (srcID.isNil or: { this.srcID.notNil and: this.srcID == src }) {
+			if (controls[synthDefName].srcID.isNil or: {
+				controls[synthDefName].srcID.notNil and: {
+					controls[synthDefName].srcID == src
+				}
+			}) {
 				CVCenter.scv[synthDefName][num] = Synth(synthDefName, argsValues);
 			};
 			if (sample) {
@@ -292,7 +279,11 @@ CVCenterKeyboard {
 
 		off = MIDIFunc.noteOff({ |veloc, num, chan, src|
 			if (this.debug) { "off[num: %]\n".postf(num) };
-			if (srcID.isNil or: { this.srcID.notNil and: this.srcID == src }) {
+			if (controls[synthDefName].srcID.isNil or: {
+				controls[synthDefName].srcID.notNil and: {
+					controls[synthDefName].srcID == src
+				}
+			}) {
 				CVCenter.scv[synthDefName][num].release;
 				CVCenter.scv[synthDefName][num] = nil;
 			};
@@ -382,7 +373,7 @@ CVCenterKeyboard {
 			};
 			pbinds = sampleEvents.collect { |slot, num|
 				if (slot.isEmpty.not) {
-					items = [\instrument, synthDefName, keyboardArg, num.midicps]
+					items = [\instrument, synthDefName, controls[synthDefName].keyboardControl, num.midicps]
 					++ slot.collect(Pseq(_, inf)).asPairs;
 					/*++ slot.collect { |v, k|
 						if (CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).notNil) {
