@@ -327,7 +327,9 @@ CVCenterKeyboard {
 			synthDefName = currentSynthDef;
 		};
 		proxyName = (name ++ "Out").asSymbol;
+		"out before: %\n".postf(controls[synthDefName].out);
 		controls[synthDefName].out_(Bus.audio(server, numChannels));
+		"out after: %\n".postf(controls[synthDefName].out);
 		if (useNdef.not) {
 			outProxy = NodeProxy.audio(server, numChannels);
 		} {
