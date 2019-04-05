@@ -1,5 +1,5 @@
 CVCenterKeyboard {
-	classvar <allKeyboards;
+	classvar <all;
 	var <name, <synthDefNames, <controls/*, synthDefName, */;
 	// var <outArg, <keyboardArg, <velocArg, <bendArg, <widgetsPrefix, <>srcID;
 	var <>bendSpec, <>out, <server;
@@ -11,7 +11,8 @@ CVCenterKeyboard {
 	*initClass {
 		StartUp.add {
 			Spec.add(\midiBend, ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz"));
-		}
+		};
+		all ?? { all = () };
 	}
 
 	*new { |name|
@@ -19,13 +20,16 @@ CVCenterKeyboard {
 	}
 
 	init {
-		allKeyboards ?? { allKeyboards = () };
-		allKeyboards[name] ?? { allKeyboards.put(name, this) };
+		all[name] ?? { all.put(name, this) };
 		synthDefNames ?? { synthDefNames = [] };
 	}
 
 	addSynthDef { |synthDefName, connectMidi = false|
 		this.initSynthDef(synthDefName, connectMidi);
+	}
+
+	*at { |keyboardName|
+		^all[keyboardName]
 	}
 
 	*newSynthDef { |name, synthDefName, connectMidi = true|
@@ -50,12 +54,8 @@ CVCenterKeyboard {
 			synthDefNames = synthDefNames.add(synthDefName.asSymbol);
 		};
 
-		allKeyboards ?? {
-			allKeyboards = ();
-		};
-
-		allKeyboards[name] ?? {
-			allKeyboards.put(name, this);
+		all[name] ?? {
+			all.put(name, this);
 		};
 
 		this.bendSpec ?? {
@@ -132,7 +132,7 @@ CVCenterKeyboard {
 			testSynth.cvcGui(
 				prefix: controls[synthDefName].prefix,
 				excemptArgs: [
-					controls[synthDefName].out,
+					controls[synthDefName].outControl,
 					controls[synthDefName].keyboardControl,
 					controls[synthDefName].velocControl,
 					\gate
@@ -157,7 +157,7 @@ CVCenterKeyboard {
 				}
 			}
 		} {
-			"A keyboard for the SynthDef '%' has already been initialized".format(synthDefName).warn;
+			"A keyboard named '%' has already been initialized".format(name).warn;
 		}
 
 	}
@@ -193,7 +193,16 @@ CVCenterKeyboard {
 				}
 			}
 		};
+	}
 
+	switchKeyboard { |synthDefName|
+		if (synthDefName.isNil) {
+			synthDefName = currentSynthDef;
+		} {
+			currentSynthDef = synthDefName;
+		};
+		this.free;
+		CVCenter.scv.put(synthDefName, nil!128);
 		this.prInitKeyboard(synthDefName);
 	}
 
@@ -204,7 +213,7 @@ CVCenterKeyboard {
 		};
 		args = SynthDescLib.at(synthDefName).controlDict.keys.asArray;
 		CVCenter.scv[synthDefName] !? {
-			"re-initializing!".postln;
+			"re-initializing: '%'\n".postf(synthDefName);
 			this.free;
 			CVCenter.scv.put(synthDefName, Array.newClear(128));
 			this.prInitCVs(synthDefName, args);
@@ -241,6 +250,7 @@ CVCenterKeyboard {
 
 	// private
 	prInitKeyboard { |synthDefName|
+		"prInitKeyboard called for SynthDef %\n".postf(synthDefName);
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var argsValues = [
 				controls[synthDefName].keyboardControl,
@@ -316,7 +326,7 @@ CVCenterKeyboard {
 		synthDefName ?? {
 			synthDefName = currentSynthDef;
 		};
-		proxyName = (synthDefName ++ "Out").asSymbol;
+		proxyName = (name ++ "Out").asSymbol;
 		controls[synthDefName].out_(Bus.audio(server, numChannels));
 		if (useNdef.not) {
 			outProxy = NodeProxy.audio(server, numChannels);
