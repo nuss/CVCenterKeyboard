@@ -252,14 +252,18 @@ CVCenterKeyboard {
 	prInitKeyboard { |synthDefName|
 		"prInitKeyboard called for SynthDef %\n".postf(synthDefName);
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
-			var argsValues = [
+			var kbArgs = [
 				controls[synthDefName].keyboardControl,
 				num.midicps,
 				controls[synthDefName].velocControl,
 				veloc * 0.005,
 				controls[synthDefName].outControl,
 				controls[synthDefName].out
-			] ++ namesCVs.deepCollect(2, _.value);
+			];
+			// sort out keyboard-controlled args, they should only get set once.
+			// this may happen if an existing CVCenter setup gets loaded after 'setUpControls'
+			var pairs = namesCVs.clump(2).select { |pair| kbArgs.includes(pair[0]).not }.flatten(1);
+			var argsValues = kbArgs ++ pairs.deepCollect(2, _.value);
 			if (this.debug) { "on[num: %]: %\n\nchan: %, src: %\n".postf(num, argsValues, chan, src) };
 			if (controls[synthDefName].srcID.isNil or: {
 				controls[synthDefName].srcID.notNil and: {
