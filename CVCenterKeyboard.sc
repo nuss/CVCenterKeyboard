@@ -163,7 +163,11 @@ CVCenterKeyboard {
 	// private
 	prInitKeyboard {
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
-			var argsValues = [keyboardArg, num.midicps, velocArg, veloc * 0.005, outArg, this.out] ++ namesCVs.deepCollect(2, _.value);
+			var kbArgs = [keyboardArg, num.midicps, velocArg, veloc * 0.005, outArg, this.out];
+			// sort out keyboard-controlled args, they should only get set once.
+			// this may happen if an existing CVCenter setup gets loaded after 'setUpControls'
+			var pairs = namesCVs.clump(2).select { |pair| kbArgs.includes(pair[0]).not }.flatten(1);
+			var argsValues = kbArgs ++ pairs.deepCollect(2, _.value);
 			if (this.debug) { "on[num: %]: %\n\nchan: %, src: %\n".postf(num, argsValues, chan, src) };
 			if (srcID.isNil or: { this.srcID.notNil and: this.srcID == src }) {
 				CVCenter.scv[synthDefName][num] = Synth(synthDefName, argsValues);
