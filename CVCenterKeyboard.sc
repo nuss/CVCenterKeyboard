@@ -1,7 +1,6 @@
 CVCenterKeyboard {
 	classvar <all;
 	var <name, <synthDefNames, <controls/*, synthDefName, */;
-	// var <outArg, <keyboardArg, <velocArg, <bendArg, <widgetsPrefix, <>srcID;
 	var <>bendSpec, <>out, <server;
 	var <currentSynthDef, <wdgtNames, <outProxy;
 	var <sample = false, <sampleEvents, <pdef;
@@ -15,7 +14,7 @@ CVCenterKeyboard {
 		all ?? { all = () };
 	}
 
-	*new { |name|
+	*new { |name=\keyboard|
 		^super.newCopyArgs(name.asSymbol).init;
 	}
 
@@ -33,7 +32,7 @@ CVCenterKeyboard {
 	}
 
 	*newSynthDef { |name, synthDefName, connectMidi = true|
-		^super.newCopyArgs(name).initSynthDef(synthDefName, connectMidi);
+		^super.newCopyArgs(name.asSymbol).initSynthDef(synthDefName, connectMidi);
 	}
 
 	initSynthDef { |synthDefName, connectMidi|
@@ -114,14 +113,6 @@ CVCenterKeyboard {
 			controls[synthDefName].out = out;
 		};
 
-		// prefix !? { widgetsPrefix = prefix };
-		// outControl !? { outArg = outControl };
-		// keyboardControl !? { keyboardArg = keyboardControl };
-		// velocControl !? { velocArg = velocControl };
-		// bendControl !? { bendArg = bendControl };
-		// srcID !? { this.srcID = srcID };
-
-		// this.out ?? { this.out = out };
 
 		tab ?? { tab = synthDefName };
 
