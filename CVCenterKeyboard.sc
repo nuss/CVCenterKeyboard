@@ -20,6 +20,7 @@ CVCenterKeyboard {
 	init {
 		all ?? { all = () };
 		all[keyboardName] ?? { all.put(keyboardName, this) };
+		#on, off, bend = ()!3;
 		synthDefNames ?? { synthDefNames = [] };
 	}
 
@@ -245,7 +246,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 	// private
 	prInitKeyboard { |synthDefName|
 		"prInitKeyboard called for SynthDef %\n".postf(synthDefName);
-		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
+		on[keyboardName] = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var kbArgs = [
 				controls[synthDefName].keyboardControl,
 				num.midicps,
@@ -258,7 +259,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 			// this may happen if an existing CVCenter setup gets loaded after 'setUpControls'
 			var pairs = namesCVs.clump(2).select { |pair| kbArgs.includes(pair[0]).not }.flatten(1);
 			var argsValues = kbArgs ++ pairs.deepCollect(2, _.value);
-			if (this.debug) { "on[num: %]: %\n\nchan: %, src: %\n".postf(num, argsValues, chan, src) };
+			if (this.debug) { "on['%']['%'][num: %]: %\n\nchan: %, src: %\n".postf(keyboardName, synthDefName, num, argsValues, chan, src) };
 			if (controls[synthDefName].srcID.isNil or: {
 				controls[synthDefName].srcID.notNil and: {
 					controls[synthDefName].srcID == src
@@ -286,8 +287,8 @@ before using it".format(synthDefName, keyboardName)).throw;
 			}
 		});
 
-		off = MIDIFunc.noteOff({ |veloc, num, chan, src|
-			if (this.debug) { "off[num: %]\n".postf(num) };
+		off[keyboardName] = MIDIFunc.noteOff({ |veloc, num, chan, src|
+			if (this.debug) { "off['%']['%'][num: %]\n".postf(keyboardName, synthDefName, num) };
 			if (controls[synthDefName].srcID.isNil or: {
 				controls[synthDefName].srcID.notNil and: {
 					controls[synthDefName].srcID == src
@@ -305,8 +306,8 @@ before using it".format(synthDefName, keyboardName)).throw;
 			}
 		});
 
-		bend = MIDIFunc.bend({ |bendVal, chan, src|
-			if (this.debug) { "bend: %\n".postf(bendVal) };
+		bend[keyboardName] = MIDIFunc.bend({ |bendVal, chan, src|
+			if (this.debug) { "bend['%']['%']: %\n".postf(keyboardName, synthDefName, bendVal) };
 			if (controls[synthDefName].srcID.isNil or: {
 				controls[synthDefName].srcID.notNil and: {
 					controls[synthDefName].srcID == src
