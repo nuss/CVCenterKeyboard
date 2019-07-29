@@ -1,6 +1,6 @@
 CVCenterKeyboard {
 	classvar <all;
-	var <name, <synthDefNames, <controls/*, synthDefName, */;
+	var <keyboardName, <synthDefNames, <controls;
 	var <>bendSpec, <>out, <server;
 	var <currentSynthDef, <wdgtNames, <outProxy;
 	var <sample = false, <sampleEvents, <pdef;
@@ -11,15 +11,15 @@ CVCenterKeyboard {
 		StartUp.add {
 			Spec.add(\midiBend, ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz"));
 		};
-		all ?? { all = () };
 	}
 
-	*new { |name=\keyboard|
-		^super.newCopyArgs(name.asSymbol).init;
+	*new { |keyboardName=\keyboard|
+		^super.newCopyArgs(keyboardName.asSymbol).init;
 	}
 
 	init {
-		all[name] ?? { all.put(name, this) };
+		all ?? { all = () };
+		all[keyboardName] ?? { all.put(keyboardName, this) };
 		synthDefNames ?? { synthDefNames = [] };
 	}
 
@@ -31,8 +31,10 @@ CVCenterKeyboard {
 		^all[keyboardName]
 	}
 
-	*newSynthDef { |name, synthDefName, connectMidi = true|
-		^super.newCopyArgs(name.asSymbol).initSynthDef(synthDefName, connectMidi);
+	*newSynthDef { |synthDefName, keyboardName=\keyboard, connectMidi = true|
+		var instance = this.new(keyboardName);
+		instance.addSynthDef(synthDefName, connectMidi);
+		^instance;
 	}
 
 	initSynthDef { |synthDefName, connectMidi|
@@ -53,9 +55,6 @@ CVCenterKeyboard {
 			synthDefNames = synthDefNames.add(synthDefName.asSymbol);
 		};
 
-		all[name] ?? {
-			all.put(name, this);
-		};
 
 		this.bendSpec ?? {
 			this.bendSpec = \midiBend.asSpec;
@@ -74,7 +73,8 @@ CVCenterKeyboard {
 		currentSynthDef = synthDefName;
 
 		synthDefNames.indexOf(synthDefName) ?? {
-			Error("SynthDef '%' must be added to CVCenterKeyboard instance '%' before using it".format(synthDefName, name)).throw;
+			Error("SynthDef '%' must be added to CVCenterKeyboard instance '%'
+before using it".format(synthDefName, keyboardName)).throw;
 		};
 
 		if (theServer.isNil) {
@@ -136,8 +136,9 @@ CVCenterKeyboard {
 
 	// private
 	prMidiInit { |synthDefName, connectMidi|
-		if (CVCenter.scv[synthDefName].isNil) {
-			CVCenter.scv.put(synthDefName, Array.newClear(128));
+		CVCenter.scv[keyboardName] ?? { CVCenter.scv.put(keyboardName, ()) };
+		if (CVCenter.scv[keyboardName][synthDefName].isNil) {
+			CVCenter.scv[keyboardName].put(synthDefName, Array.newClear(128));
 			MIDIClient.init;
 			// doesn't seem to work properly on Ubuntustudio 16
 			// possibly has to be done manually in QJackQtl...
@@ -148,7 +149,7 @@ CVCenterKeyboard {
 				}
 			}
 		} {
-			"A keyboard named '%' has already been initialized".format(name).warn;
+			"A keyboard named '%' has already been initialized".format(keyboardName).warn;
 		}
 
 	}
@@ -159,7 +160,7 @@ CVCenterKeyboard {
 
 		this.prInitCVs(synthDefName, args);
 
-		args.do { |name, i|
+		args.do { |argName, i|
 			wdgtName = wdgtNames[i];
 			CVCenter.cvWidgets[wdgtName] !? {
 				if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
@@ -172,14 +173,14 @@ CVCenterKeyboard {
 						};
 						CVCenter.addActionAt(
 							wdgtName, 'keyboard set arg',
-							"{ |cv| CVCenter.scv['%'].do { |synth| synth !? { synth.set('%', %) }}; }"
-							.format(synthDefName, name, setString), slot);
+							"{ |cv| CVCenter.scv['%']['%'].do { |synth| synth !? { synth.set('%', %) }}; }"
+							.format(keyboardName, synthDefName, argName, setString), slot);
 						CVCenter.activateActionAt(wdgtName, \default, deactivateDefaultActions.not, slot);
 					}
 				} {
 					CVCenter.addActionAt(wdgtName, 'keyboard set arg',
-						"{ |cv| CVCenter.scv['%'].do { |synth| synth !? { synth.set('%', cv.value) }}; }"
-						.format(synthDefName, name));
+						"{ |cv| CVCenter.scv['%']['%'].do { |synth| synth !? { synth.set('%', cv.value) }}; }"
+						.format(keyboardName, synthDefName, argName));
 					CVCenter.activateActionAt(wdgtName, \default, deactivateDefaultActions.not);
 				}
 			}
@@ -203,10 +204,12 @@ CVCenterKeyboard {
 			synthDefName = currentSynthDef;
 		};
 		args = SynthDescLib.at(synthDefName).controlDict.keys.asArray;
-		CVCenter.scv[synthDefName] !? {
+		CVCenter.scv[keyboardName] ?? { CVCenter.scv.put(keyboardName, ()) };
+		CVCenter.scv[keyboardName][synthDefName] !? {
 			"re-initializing: '%'\n".postf(synthDefName);
 			this.free;
-			CVCenter.scv.put(synthDefName, Array.newClear(128));
+			CVCenter.scv.put(keyboardName, ());
+			CVCenter.scv[keyboardName].put(synthDefName, Array.newClear(128));
 			this.prInitCVs(synthDefName, args);
 			this.prInitKeyboard(synthDefName);
 		}
@@ -218,20 +221,20 @@ CVCenterKeyboard {
 
 		#wdgtNames, namesCVs = []!2;
 
-		args.do { |name|
-			nameString = name.asString;
+		args.do { |argName|
+			nameString = argName.asString;
 			controls[synthDefName].prefix !? {
 				nameString = nameString[0].toUpper ++ nameString[1..nameString.size-1];
 			};
 			wdgtName = (controls[synthDefName].prefix ++ nameString).asSymbol;
 			CVCenter.cvWidgets[wdgtName] !? {
 				if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
-					if (namesCVs.includes(name).not) {
-						namesCVs = namesCVs.add(name).add(CVCenter.at(wdgtName).asArray);
+					if (namesCVs.includes(argName).not) {
+						namesCVs = namesCVs.add(argName).add(CVCenter.at(wdgtName).asArray);
 					}
 				} {
-					if (namesCVs.includes(name).not) {
-						namesCVs = namesCVs.add(name).add(CVCenter.at(wdgtName));
+					if (namesCVs.includes(argName).not) {
+						namesCVs = namesCVs.add(argName).add(CVCenter.at(wdgtName));
 					}
 				}
 			};
@@ -261,7 +264,7 @@ CVCenterKeyboard {
 					controls[synthDefName].srcID == src
 				}
 			}) {
-				CVCenter.scv[synthDefName][num] = Synth(synthDefName, argsValues);
+				CVCenter.scv[keyboardName][synthDefName][num] = Synth(synthDefName, argsValues);
 			};
 			if (sample) {
 				onTimes[num] = Main.elapsedTime;
@@ -290,8 +293,8 @@ CVCenterKeyboard {
 					controls[synthDefName].srcID == src
 				}
 			}) {
-				CVCenter.scv[synthDefName][num].release;
-				CVCenter.scv[synthDefName][num] = nil;
+				CVCenter.scv[keyboardName][synthDefName][num].release;
+				CVCenter.scv[keyboardName][synthDefName][num] = nil;
 			};
 			if (sample) {
 				offTimes[num] = Main.elapsedTime;
@@ -309,7 +312,7 @@ CVCenterKeyboard {
 					controls[synthDefName].srcID == src
 				}
 			}) {
-				CVCenter.scv[synthDefName].do({ |synth, i|
+				CVCenter.scv[keyboardName][synthDefName].do({ |synth, i|
 					synth.set(controls[synthDefName].bendControl, (i + bendSpec.map(bendVal / 16383)).midicps)
 				})
 			}
@@ -321,7 +324,7 @@ CVCenterKeyboard {
 		synthDefName ?? {
 			synthDefName = currentSynthDef;
 		};
-		proxyName = (name ++ "Out").asSymbol;
+		proxyName = (keyboardName ++ "Out").asSymbol;
 		"out before: %\n".postf(controls[synthDefName].out);
 		controls[synthDefName].out_(Bus.audio(server, numChannels));
 		"out after: %\n".postf(controls[synthDefName].out);
@@ -352,8 +355,9 @@ CVCenterKeyboard {
 		on !? { on.free };
 		off !? { off.free };
 		bend !? { bend.free };
-		CVCenter.scv[synthDefName].do(_.release);
-		CVCenter.scv.removeAt(synthDefName);
+		CVCenter.scv[keyboardName][synthDefName].do(_.release);
+		// CVCenter.scv[keyboardName].removeAt(synthDefName);
+		CVCenter.scv.removeAt(keyboardName);
 	}
 
 	// start/stop sampling
