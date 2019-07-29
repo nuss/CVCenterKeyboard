@@ -1,0 +1,168 @@
+TITLE:: CVCenterKeyboard
+summary:: A MIDI keyboard implementation for CVCenter
+categories:: Conductor>CVCenter, External Control>MIDI
+related:: Classes/CVCenter, Guides/UsingMIDI
+
+DESCRIPTION::
+CVCenterKeyboard lets you create a link::Guides/UsingMIDI##MIDI keyboard:: layout instantly from any SynthDef that provides
+a code::\gate:: key, meaning that a Synth that has been instiated upon receiving a note-on message
+gets finished when it gets a not-off message from an external MIDI keyboard. That allows for playing sustained notes that
+can be controlled through code::asr:: or code::adsr:: envelopes.
+
+Seting up the keyboard basically involves to steps: First instantiating a keyboard
+(through link::#-new:: or link::#-newSynthDef::) and then setting up the keyboard
+for a given SynthDef through link::-setUpControls:: (will start the Server).
+
+You can assign four arbitray controls from your SynthDef to the following standard parameters
+
+DEFINITIONLIST::
+## outControl
+|| the arg that sets the output bus of the Synth
+## keyboardControl
+|| what ever you want to play with your keyboard (e.g. Frequency). You'll get midi notes back
+## velocControl
+|| whatever you want to control through keyboard velocity
+## bendControl
+|| whatever you want to control through the pitch bend weal (the internal control
+	will automatically assigned a spec code::ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz")::)
+::
+
+Especially after loading an already existing CVCenter setup you possibly have to re-init the keyboard through link::-reInit::
+
+First code examples:
+
+code::
+(
+SynthDef(\formantIt, {
+	var env, sound;
+	env = EnvGen.ar(Env.adsr(\atk.kr(0.01), \dec.kr(0.3), \sust.kr(0.5), \rel.kr(0.5)), \gate.kr(1), doneAction:2);
+	sound = Formant.ar(\freq.kr(220!2), \formfreq.kr(221!2), \bwidth.kr(800!2) * env * \envfact.kr(1));
+	Out.ar(\out.kr(0), Pan2.ar(sound * env * \veloc.kr(1) * \amp.kr(0.5)));
+}).add;
+)
+
+~kb = CVCenterKeyboard(\myKeyboard);
+~kb.setUpControls(\formantIt, \form, \out, \freq, \veloc, \carfreq);
+::
+
+CLASSMETHODS::
+
+METHOD:: all
+
+METHOD:: new
+argument:: name
+
+METHOD:: newSynthDef
+argument:: synthDefName
+argument:: connectMidi
+argument:: keyboardName
+
+METHOD:: initClass
+
+METHOD:: at
+argument:: keyboardName
+
+
+INSTANCEMETHODS::
+
+METHOD:: currentSynthDef
+
+METHOD:: clearSamples
+argument::  ... indices
+
+METHOD:: prResetSampling
+
+METHOD:: addOutProxy
+argument:: synthDefName
+argument:: numChannels
+argument:: useNdef
+
+METHOD:: synthDefNames
+
+METHOD:: reInit
+argument:: synthDefName
+
+METHOD:: switchKeyboard
+argument:: synthDefName
+
+METHOD:: addSynthDef
+argument:: synthDefName
+argument:: connectMidi
+
+METHOD:: out
+
+METHOD:: controls
+
+METHOD:: prInitCVs
+argument:: synthDefName
+argument:: args
+
+METHOD:: init
+
+METHOD:: setUpControls
+argument:: synthDefName
+argument:: prefix
+argument:: outControl
+argument:: keyboardControl
+argument:: velocControl
+argument:: bendControl
+argument:: theServer
+argument:: out
+argument:: deactivateDefaultWidgetActions
+argument:: srcID
+argument:: tab
+
+METHOD:: bendSpec
+
+METHOD:: pdef
+
+METHOD:: initSynthDef
+argument:: synthDefName
+argument:: connectMidi
+argument:: keyboardName
+
+METHOD:: removeOutProxy
+argument:: synthDefName
+argument:: out
+
+METHOD:: debug
+
+METHOD:: sample
+
+METHOD:: activateSampling
+argument:: onOff
+argument:: synthDefName
+
+METHOD:: prAddWidgetActionsForKeyboard
+argument:: synthDefName
+argument:: deactivateDefaultActions
+
+METHOD:: prInitKeyboard
+argument:: synthDefName
+
+METHOD:: server
+
+METHOD:: name
+
+METHOD:: wdgtNames
+
+METHOD:: outProxy
+
+METHOD:: free
+argument:: synthDefName
+
+METHOD:: sampleEvents
+
+METHOD:: prMidiInit
+argument:: synthDefName
+argument:: connectMidi
+
+METHOD:: prDurSum
+argument:: durs
+
+
+EXAMPLES::
+
+code::
+_some_example_code_
+::
