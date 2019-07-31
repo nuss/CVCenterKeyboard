@@ -66,8 +66,8 @@ CVCenterKeyboard {
 
 	// keyboardArg is the arg that will be set through playing the keyboard
 	// bendArg will be the arg that's set through the pitch bend wheel
-	setUpControls { |synthDefName, prefix, outControl, keyboardControl, velocControl, bendControl, theServer, out=0, deactivateDefaultWidgetActions = true, srcID, tab|
-		var testSynth, notesEnv;
+	setUpControls { |synthDefName, prefix, keyboardControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter, theServer, out=0, deactivateDefaultWidgetActions = true, srcID, tab|
+		var testSynth, notesEnv, excemptArgs = [];
 		var args = [];
 
 		synthDefName = synthDefName.asSymbol;
@@ -97,15 +97,27 @@ before using it".format(synthDefName, keyboardName)).throw;
 		};
 		outControl !? {
 			controls[synthDefName].outControl = outControl;
+			includeInCVCenter.includes(outControl).not.if {
+				excemptArgs = excemptArgs.add(outControl)
+			}
 		};
 		keyboardControl !? {
 			controls[synthDefName].keyboardControl = keyboardControl;
+			includeInCVCenter.includes(keyboardControl).not.if {
+				excemptArgs = excemptArgs.add(keyboardControl)
+			}
 		};
 		velocControl !? {
 			controls[synthDefName].velocControl = velocControl;
+			includeInCVCenter.includes(velocControl).not.if {
+				excemptArgs = excemptArgs.add(velocControl)
+			}
 		};
 		bendControl !? {
 			controls[synthDefName].bendControl = bendControl;
+			includeInCVCenter.includes(bendControl).not.if {
+				excemptArgs = excemptArgs.add(bendControl)
+			}
 		};
 		srcID !? {
 			controls[synthDefName].srcID = srcID;
@@ -114,6 +126,9 @@ before using it".format(synthDefName, keyboardName)).throw;
 			controls[synthDefName].out = out;
 		};
 
+		"out after setup: %\n".postf(out);
+
+		excemptArgs = excemptArgs.add(\gate);
 
 		tab ?? { tab = synthDefName };
 
@@ -123,14 +138,12 @@ before using it".format(synthDefName, keyboardName)).throw;
 			// \gate will be set internally
 			testSynth.cvcGui(
 				prefix: controls[synthDefName].prefix,
-				excemptArgs: [
-					controls[synthDefName].outControl,
-					controls[synthDefName].keyboardControl,
-					controls[synthDefName].velocControl,
-					\gate
-				], tab: tab, completionFunc: {
-				this.prAddWidgetActionsForKeyboard(synthDefName, deactivateDefaultWidgetActions);
-			});
+				excemptArgs: excemptArgs,
+				tab: tab,
+				completionFunc: {
+					this.prAddWidgetActionsForKeyboard(synthDefName, deactivateDefaultWidgetActions);
+				}
+			);
 			testSynth.release;
 		}
 	}
@@ -259,6 +272,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 			// this may happen if an existing CVCenter setup gets loaded after 'setUpControls'
 			var pairs = namesCVs.clump(2).select { |pair| kbArgs.includes(pair[0]).not }.flatten(1);
 			var argsValues = kbArgs ++ pairs.deepCollect(2, _.value);
+			// "kbArgs: %\n\npairs: %\n\nargsValues: %\n".postf(kbArgs, pairs, argsValues);
 			if (this.debug) { "on['%']['%'][num: %]: %\n\nchan: %, src: %\n".postf(keyboardName, synthDefName, num, argsValues, chan, src) };
 			if (controls[synthDefName].srcID.isNil or: {
 				controls[synthDefName].srcID.notNil and: {
@@ -320,14 +334,17 @@ before using it".format(synthDefName, keyboardName)).throw;
 		});
 	}
 
-	addOutProxy { |synthDefName, numChannels=2, useNdef=false|
+	addOutProxy { |synthDefName, numChannels=2, useNdef=false, out|
 		var proxyName;
 		synthDefName ?? {
 			synthDefName = currentSynthDef;
 		};
+		out ?? {
+			out = controls[synthDefName].out;
+		};
 		proxyName = (keyboardName ++ "Out").asSymbol;
 		"out before: %\n".postf(controls[synthDefName].out);
-		controls[synthDefName].out_(Bus.audio(server, numChannels));
+		// controls[synthDefName].out_(Bus.audio(server, numChannels));
 		"out after: %\n".postf(controls[synthDefName].out);
 		if (useNdef.not) {
 			outProxy = NodeProxy.audio(server, numChannels);
@@ -338,7 +355,8 @@ before using it".format(synthDefName, keyboardName)).throw;
 		outProxy.source = {
 			In.ar(controls[synthDefName].out, numChannels)
 		};
-		outProxy.play;
+		"out: %\n".postf(out);
+		outProxy.play(out);
 	}
 
 	removeOutProxy { |synthDefName, out=0|
@@ -362,7 +380,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 	}
 
 	// start/stop sampling
-	activateSampling { |onOff, synthDefName|
+	activateSampling { |onOff = true, synthDefName|
 		var pbinds, items, pbproxy, last;
 		synthDefName ?? {
 			synthDefName = currentSynthDef;
@@ -396,7 +414,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 					};*/
 					pbproxy = Pbind.new.patternpairs_(items);
 				}
-			}./*postln.*/takeThese(_.isNil);
+			}.takeThese(_.isNil);
 			if (pbinds.isEmpty.not) {
 				// pbinds.do { |pb| pb.patternpairs.postln };
 				pdef = pdef.add(Pdef((synthDefName ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
@@ -410,7 +428,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 			sampleStart = Main.elapsedTime;
 			this.prResetSampling;
 			"\nsampling keyboard events started\n".inform;
-		}
+		};
 	}
 
 	prDurSum { |durs|
