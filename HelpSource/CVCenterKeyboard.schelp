@@ -27,12 +27,50 @@ DEFINITIONLIST::
 	will automatically assigned a spec code::ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz")::)
 ::
 
+All other controls you may have defined in your SynthDef will automatically be picked up by the setup process and get assigned appropriate widgets automatically.
+
 Especially after loading an already existing CVCenter setup you possibly have to re-init the keyboard through link::-reInit::
 
 Additionally an output proxy - a link::Classes/NodeProxy:: or an link::Classes/Ndef:: - can be added through link::-addOutProxy:: which allows you to do filtering and all kinds of NodeProxy trickery.
-First code examples:
+
+CLASSMETHODS::
+
+METHOD:: all
+returns:: an link::Classes/Event::, containing all instantiated Keyboards
+
+METHOD:: new
+argument:: name
+Instanciate a new keyboard under code::name::. The keyboard will be accessible under code::CVCenterKeyboard.all[name]::
+returns:: a CVCenterKeyboard
+
+METHOD:: newSynthDef
+argument:: synthDefName
+a link::Classes/Symbol:: or link::Classes/String::, identifying an already declared link::Classes/SynthDef:: to be used with the new CVCenterKeyboard instance.
+The SynthDef must have defined an envelop and a code::\gate:: argument.
+argument:: keyboardName
+a link::Classes/Symbol:: or link::Classes/String::, identifying the CVCenterKeyboard. The keyboard will be accessible at this key within the code::CVCenter.all:: variable.
+argument:: connectMidi
+if set to code::true:: immediately connect the external MIDI keyboard (default: code::true::)
+returns:: a CVCenterKeyboard
+
+METHOD:: initClass
+
+METHOD:: at
+argument:: keyboardName
+
+
+INSTANCEMETHODS::
+
+METHOD:: setUpControls
+Set up the keyboard for the specified link::Classes/SynthDef::. The SynthDef must already have been added beforehand,
+either when creating the keyboard with link::#*newSynthDef:: or link::#-addSynthDef::. code::setUpControls:: will analyze
+the internal control structure of the SynthDef and create a set of appropriate link::Classes/CVWidget::s within link::Classes/CVCenter::.
+Some controls, however, must be reserved for the control through the MIDI keyboard keys: an argument for pitch, one for velocity
+and a bend argument as well as one for the output bus.
 
 code::
+// define a SynthDef
+// notice the enevlope and gate
 (
 SynthDef(\pmosc, {
 	var env = Env.adsr(\atk.kr(0.01), \dec.kr(0.3), \sust.kr(0.5), \rel.kr(0.7));
@@ -61,31 +99,45 @@ Spec.add(\modphase, \phase);
 
 //
 ~kb = CVCenterKeyboard.newSynthDef(\pmosc, \myKeyboard);
-~kb.setUpControls(\pmosc, \kb, \out, \carfreq, \veloc, \carfreq);
-// just in case, won't do no harm
+
+(
+~kb.setUpControls(
+	\pmosc, // the SynthDef
+	\kb, // a prefix for CVCenter, should make shure the resulting widgets have a unique names
+	\out, // the argument setting the out bus
+	\carfreq, // the pitch argument, to be controlled through the MIDI keyboard keys
+	\veloc, // the velocity argument
+	\carfreq // the bend argument - will often be the same as the pitch argument
+);
+// in case a keyboard doesn't play... won't do no harm
 ~kb.reInit(\pmosc);
-~kb.addOutProxy(useNdef: true);
 ::
 
-CLASSMETHODS::
 
-METHOD:: all
-
-METHOD:: new
-argument:: name
-
-METHOD:: newSynthDef
 argument:: synthDefName
-argument:: connectMidi
-argument:: keyboardName
-
-METHOD:: initClass
-
-METHOD:: at
-argument:: keyboardName
-
-
-INSTANCEMETHODS::
+the link::Classes/SynthDef::'s name
+argument:: prefix
+an optional link::Classes/Symbol:: or link::Classes/String:: for CVCenter, to make sure the resulting widgets get a unique name.
+argument:: pitchControl
+a link::Classes/Symbol:: or link::Classes/String:: denoting the keyboard key, incoming note. Default: code::\freq::
+argument:: velocControl
+a link::Classes/Symbol:: or link::Classes/String:: denoting velocity coming with the note. Default: code::\veloc::
+argument:: bendControl
+a link::Classes/Symbol:: or link::Classes/String:: denoting the pitch bend wheel. Default: code::\bend::
+argument:: outControl
+a link::Classes/Symbol:: or link::Classes/String:: denoting the output bus. Default: code::\out::
+argument:: includeInCVCenter
+an link::Classes/Array:: of link::Classes/Symbol::s or link::Classes/String::s, denoting those of the afore described arguments which emphasis::should:: appear in CVCenter though they have already been assigned to the keyboard
+argument:: theServer
+optional: the link::Classes/Server:: to rum the link::Classes/Synth:: on
+argument:: out
+optional: an link::Classes/Integer:: denoting a default output bus (can be set in the SynthDef beforehand as well)
+argument:: deactivateDefaultWidgetActions
+a link::Classes/Boolean::, denoting if default widget actions should be deactivated (default: code::true::)
+argument:: srcID
+optional: an link::Classes/Integer::, denoting the source ID of a MIDI device (see also: link::Guides/UsingMIDI::)
+argument:: tab
+optional: a link::Classes/Symbol:: or link::Classes/String:: denoting the tab in which the CVWidgets for this given Synth will appear. If none is given the tab name will default the the SynthDef's name
 
 METHOD:: currentSynthDef
 
@@ -120,19 +172,6 @@ argument:: synthDefName
 argument:: args
 
 METHOD:: init
-
-METHOD:: setUpControls
-argument:: synthDefName
-argument:: prefix
-argument:: outControl
-argument:: keyboardControl
-argument:: velocControl
-argument:: bendControl
-argument:: theServer
-argument:: out
-argument:: deactivateDefaultWidgetActions
-argument:: srcID
-argument:: tab
 
 METHOD:: bendSpec
 

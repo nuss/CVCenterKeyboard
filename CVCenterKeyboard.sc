@@ -66,9 +66,17 @@ CVCenterKeyboard {
 
 	// keyboardArg is the arg that will be set through playing the keyboard
 	// bendArg will be the arg that's set through the pitch bend wheel
-	setUpControls { |synthDefName, prefix, keyboardControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter, theServer, out=0, deactivateDefaultWidgetActions = true, srcID, tab|
+	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter, theServer, out=0, deactivateDefaultWidgetActions = true, srcID, tab|
 		var testSynth, notesEnv, excemptArgs = [];
 		var args = [];
+
+		pitchControl = pitchContro.asSymbol;
+		veloControl = velocControl.asSymbol;
+		bendControl = bendControl.asSymbol;
+		outControl = outControl.asSymbol;
+		includeInCVCenter !? {
+			includeInCVCenter = includeInCVCenter.collect { |name| name.asSymbol }
+		};
 
 		synthDefName = synthDefName.asSymbol;
 		currentSynthDef = synthDefName;
@@ -101,10 +109,10 @@ before using it".format(synthDefName, keyboardName)).throw;
 				excemptArgs = excemptArgs.add(outControl)
 			}
 		};
-		keyboardControl !? {
-			controls[synthDefName].keyboardControl = keyboardControl;
-			includeInCVCenter.includes(keyboardControl).not.if {
-				excemptArgs = excemptArgs.add(keyboardControl)
+		pitchControl !? {
+			controls[synthDefName].pitchControl = pitchControl;
+			includeInCVCenter.includes(pitchControl).not.if {
+				excemptArgs = excemptArgs.add(pitchControl)
 			}
 		};
 		velocControl !? {
@@ -261,7 +269,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 		"prInitKeyboard called for SynthDef %\n".postf(synthDefName);
 		on[keyboardName] = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var kbArgs = [
-				controls[synthDefName].keyboardControl,
+				controls[synthDefName].pitchControl,
 				num.midicps,
 				controls[synthDefName].velocControl,
 				veloc * 0.005,
@@ -404,7 +412,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 			};
 			pbinds = sampleEvents.collect { |slot, num|
 				if (slot.isEmpty.not) {
-					items = [\instrument, synthDefName, controls[synthDefName].keyboardControl, num.midicps]
+					items = [\instrument, synthDefName, controls[synthDefName].pitchControl, num.midicps]
 					++ slot.collect(Pseq(_, inf)).asPairs;
 					/*++ slot.collect { |v, k|
 						if (CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).notNil) {
