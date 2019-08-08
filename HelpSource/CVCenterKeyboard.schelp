@@ -97,18 +97,19 @@ Spec.add(\pmindex, #[0, 30]);
 Spec.add(\modphase, \phase);
 )
 
-//
+// create a new keyboard and add the given SynthDef
 ~kb = CVCenterKeyboard.newSynthDef(\pmosc, \myKeyboard);
 
 (
 ~kb.setUpControls(
 	\pmosc, // the SynthDef
 	\kb, // a prefix for CVCenter, should make shure the resulting widgets have a unique names
-	\out, // the argument setting the out bus
 	\carfreq, // the pitch argument, to be controlled through the MIDI keyboard keys
 	\veloc, // the velocity argument
-	\carfreq // the bend argument - will often be the same as the pitch argument
+	\carfreq, // the bend argument - will often be the same as the pitch argument
+	\out, // the argument setting the out bus
 );
+)
 // in case a keyboard doesn't play... won't do no harm
 ~kb.reInit(\pmosc);
 ::
@@ -139,33 +140,53 @@ optional: an link::Classes/Integer::, denoting the source ID of a MIDI device (s
 argument:: tab
 optional: a link::Classes/Symbol:: or link::Classes/String:: denoting the tab in which the CVWidgets for this given Synth will appear. If none is given the tab name will default the the SynthDef's name
 
+METHOD:: addSynthDef
+Add a new link::Classes/SynthDef:: to an already existing CVCenterKeyboard.
+argument:: synthDefName
+A link::Classes/String:: or link::Classes/Symbol::, denoting the name of the SynthDef.
+The SynthDef must already exist.
+argument:: connectMidi
+A link::Classes/Boolean::, indicating whether the given SynthDef should immediately be
+connected to the physical keyboard. Default: code::false::.
+returns:: a CVCenterKeyboard
+
+METHOD:: reInit
+It may happen that the physical keyboard doesn't respond, e.g. after loading a link::Classes/CVCenter#*loadSetup#CVCenter setup::.
+This short command will recreate the keyboard internally without any further user interaction. Optionally the name of the SynthDef for
+which the keyboard shall recreated may be given.
+argument:: synthDefName
+optional - a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: you want to reinitialize.
+
 METHOD:: currentSynthDef
+The CVCenterKeyboard must have been set up through calling link::#-setUpControls:: before.
+returns:: a link::Classes/Symbol::, denoting the SynthDef currently used with the CVCenterKeyboard instance
 
-METHOD:: clearSamples
-argument::  ... indices
+METHOD:: synthDefNames
+returns:: an link::Classes/Array:: of link::Classes/Symbol::s, denoting all SynthDefs that have been added to the CVCenterKeyboard instance
 
-METHOD:: prResetSampling
+METHOD:: switchSynthDef
+Switch to a different SynthDef. The SynthDef must have been added emphasis::and:: set up beforehand.
+argument:: synthDefName
+returns:: a CVCenterKeyboard
+
+METHOD:: out
+Set or get the Synth out bus.
+
+METHOD:: controls
+returns:: an link::Classes/Event:: holding the controls the emphasis::all SynthDefs:: as passed in with link::#-setUpControls::.
+The SynthDef names are the keys for the sub Events.
+
+
 
 METHOD:: addOutProxy
 argument:: synthDefName
 argument:: numChannels
 argument:: useNdef
 
-METHOD:: synthDefNames
+METHOD:: clearSamples
+argument::  ... indices
 
-METHOD:: reInit
-argument:: synthDefName
-
-METHOD:: switchKeyboard
-argument:: synthDefName
-
-METHOD:: addSynthDef
-argument:: synthDefName
-argument:: connectMidi
-
-METHOD:: out
-
-METHOD:: controls
+METHOD:: prResetSampling
 
 METHOD:: prInitCVs
 argument:: synthDefName

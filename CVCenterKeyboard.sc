@@ -39,6 +39,7 @@ CVCenterKeyboard {
 	}
 
 	initSynthDef { |synthDefName, connectMidi|
+		synthDefName = synthDefName.asSymbol;
 		SynthDescLib.at(synthDefName) ?? {
 			Error(
 				"The SynthDef '%' does not exist".format(synthDefName)
@@ -66,12 +67,12 @@ CVCenterKeyboard {
 
 	// keyboardArg is the arg that will be set through playing the keyboard
 	// bendArg will be the arg that's set through the pitch bend wheel
-	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter, theServer, out=0, deactivateDefaultWidgetActions = true, srcID, tab|
+	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter=#[], theServer, out=0, deactivateDefaultWidgetActions = true, srcID, tab|
 		var testSynth, notesEnv, excemptArgs = [];
 		var args = [];
 
-		pitchControl = pitchContro.asSymbol;
-		veloControl = velocControl.asSymbol;
+		pitchControl = pitchControl.asSymbol;
+		velocControl = velocControl.asSymbol;
 		bendControl = bendControl.asSymbol;
 		outControl = outControl.asSymbol;
 		includeInCVCenter !? {
@@ -117,7 +118,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 		};
 		velocControl !? {
 			controls[synthDefName].velocControl = velocControl;
-			includeInCVCenter.includes(velocControl).not.if {
+				includeInCVCenter.includes(velocControl).not.if {
 				excemptArgs = excemptArgs.add(velocControl)
 			}
 		};
@@ -134,11 +135,11 @@ before using it".format(synthDefName, keyboardName)).throw;
 			controls[synthDefName].out = out;
 		};
 
-		"out after setup: %\n".postf(out);
-
 		excemptArgs = excemptArgs.add(\gate);
 
 		tab ?? { tab = synthDefName };
+
+		"excemptArgs: %\n".postf(excemptArgs);
 
 		server.waitForBoot {
 			// SynthDef *should* have an \amp arg, otherwise it will sound for moment
@@ -209,7 +210,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 		};
 	}
 
-	switchKeyboard { |synthDefName|
+	switchSynthDef { |synthDefName|
 		if (synthDefName.isNil) {
 			synthDefName = currentSynthDef;
 		} {
@@ -274,6 +275,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 				controls[synthDefName].velocControl,
 				veloc * 0.005,
 				controls[synthDefName].outControl,
+				// FIXME: this should probably be this.out, shouldn't it?
 				controls[synthDefName].out
 			];
 			// sort out keyboard-controlled args, they should only get set once.
