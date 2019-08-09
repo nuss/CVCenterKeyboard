@@ -1,9 +1,9 @@
 CVCenterKeyboard {
 	classvar <all;
-	var <keyboardName, <synthDefNames, <controls;
+	var <keyboardName, <synthDefNames, synthParams;
 	var <>bendSpec, <>out, <server;
 	var <currentSynthDef, <wdgtNames, <outProxy;
-	var <sample = false, <sampleEvents, <pdef;
+	var sampling = false, sampleEvents, <pdef;
 	var on, off, bend, namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <>debug = false;
 
@@ -25,7 +25,7 @@ CVCenterKeyboard {
 	}
 
 	addSynthDef { |synthDefName, connectMidi = false|
-		this.initSynthDef(synthDefName, connectMidi);
+		this.prInitSynthDef(synthDefName, connectMidi);
 	}
 
 	*at { |keyboardName|
@@ -38,7 +38,7 @@ CVCenterKeyboard {
 		^instance;
 	}
 
-	initSynthDef { |synthDefName, connectMidi|
+	prInitSynthDef { |synthDefName, connectMidi|
 		synthDefName = synthDefName.asSymbol;
 		SynthDescLib.at(synthDefName) ?? {
 			Error(
@@ -67,7 +67,7 @@ CVCenterKeyboard {
 
 	// keyboardArg is the arg that will be set through playing the keyboard
 	// bendArg will be the arg that's set through the pitch bend wheel
-	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter=#[], theServer, out=0, deactivateDefaultWidgetActions = true, srcID, tab|
+	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter=#[], theServer, outbus=0, deactivateDefaultWidgetActions = true, srcID, tab|
 		var testSynth, notesEnv, excemptArgs = [];
 		var args = [];
 
@@ -93,47 +93,48 @@ before using it".format(synthDefName, keyboardName)).throw;
 			server = theServer;
 		};
 
-		controls ?? {
-			controls = ();
+		synthParams ?? {
+			synthParams = ();
 		};
 
-		controls[synthDefName] ?? {
-			controls.put(synthDefName, ());
+		synthParams[synthDefName] ?? {
+			synthParams.put(synthDefName, ());
 		};
 
 		prefix !? {
-			controls[synthDefName].prefix = prefix;
+			synthParams[synthDefName].prefix = prefix;
 		};
 		outControl !? {
-			controls[synthDefName].outControl = outControl;
+			synthParams[synthDefName].outControl = outControl;
 			includeInCVCenter.includes(outControl).not.if {
 				excemptArgs = excemptArgs.add(outControl)
 			}
 		};
 		pitchControl !? {
-			controls[synthDefName].pitchControl = pitchControl;
+			synthParams[synthDefName].pitchControl = pitchControl;
 			includeInCVCenter.includes(pitchControl).not.if {
 				excemptArgs = excemptArgs.add(pitchControl)
 			}
 		};
 		velocControl !? {
-			controls[synthDefName].velocControl = velocControl;
+			synthParams[synthDefName].velocControl = velocControl;
 				includeInCVCenter.includes(velocControl).not.if {
 				excemptArgs = excemptArgs.add(velocControl)
 			}
 		};
 		bendControl !? {
-			controls[synthDefName].bendControl = bendControl;
+			synthParams[synthDefName].bendControl = bendControl;
 			includeInCVCenter.includes(bendControl).not.if {
 				excemptArgs = excemptArgs.add(bendControl)
 			}
 		};
 		srcID !? {
-			controls[synthDefName].srcID = srcID;
+			synthParams[synthDefName].srcID = srcID;
 		};
-		controls[synthDefName].out ?? {
-			controls[synthDefName].out = out;
-		};
+		outbus !? { this.out_(outbus) };
+		// synthParams[synthDefName].out ?? {
+		// 	synthParams[synthDefName].out = out;
+		// };
 
 		excemptArgs = excemptArgs.add(\gate);
 
@@ -146,7 +147,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 			testSynth = Synth(synthDefName);
 			// \gate will be set internally
 			testSynth.cvcGui(
-				prefix: controls[synthDefName].prefix,
+				prefix: synthParams[synthDefName].prefix,
 				excemptArgs: excemptArgs,
 				tab: tab,
 				completionFunc: {
@@ -246,10 +247,10 @@ before using it".format(synthDefName, keyboardName)).throw;
 
 		args.do { |argName|
 			nameString = argName.asString;
-			controls[synthDefName].prefix !? {
+			synthParams[synthDefName].prefix !? {
 				nameString = nameString[0].toUpper ++ nameString[1..nameString.size-1];
 			};
-			wdgtName = (controls[synthDefName].prefix ++ nameString).asSymbol;
+			wdgtName = (synthParams[synthDefName].prefix ++ nameString).asSymbol;
 			CVCenter.cvWidgets[wdgtName] !? {
 				if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
 					if (namesCVs.includes(argName).not) {
@@ -270,13 +271,14 @@ before using it".format(synthDefName, keyboardName)).throw;
 		"prInitKeyboard called for SynthDef %\n".postf(synthDefName);
 		on[keyboardName] = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var kbArgs = [
-				controls[synthDefName].pitchControl,
+				synthParams[synthDefName].pitchControl,
 				num.midicps,
-				controls[synthDefName].velocControl,
+				synthParams[synthDefName].velocControl,
 				veloc * 0.005,
-				controls[synthDefName].outControl,
+				synthParams[synthDefName].outControl,
 				// FIXME: this should probably be this.out, shouldn't it?
-				controls[synthDefName].out
+				// synthParams[synthDefName].out
+				this.out;
 			];
 			// sort out keyboard-controlled args, they should only get set once.
 			// this may happen if an existing CVCenter setup gets loaded after 'setUpControls'
@@ -284,14 +286,14 @@ before using it".format(synthDefName, keyboardName)).throw;
 			var argsValues = kbArgs ++ pairs.deepCollect(2, _.value);
 			// "kbArgs: %\n\npairs: %\n\nargsValues: %\n".postf(kbArgs, pairs, argsValues);
 			if (this.debug) { "on['%']['%'][num: %]: %\n\nchan: %, src: %\n".postf(keyboardName, synthDefName, num, argsValues, chan, src) };
-			if (controls[synthDefName].srcID.isNil or: {
-				controls[synthDefName].srcID.notNil and: {
-					controls[synthDefName].srcID == src
+			if (synthParams[synthDefName].srcID.isNil or: {
+				synthParams[synthDefName].srcID.notNil and: {
+					synthParams[synthDefName].srcID == src
 				}
 			}) {
 				CVCenter.scv[keyboardName][synthDefName][num] = Synth(synthDefName, argsValues);
 			};
-			if (sample) {
+			if (sampling) {
 				onTimes[num] = Main.elapsedTime;
 				argsValues.pairsDo { |k, v|
 					sampleEvents[num][k] ?? {
@@ -313,15 +315,15 @@ before using it".format(synthDefName, keyboardName)).throw;
 
 		off[keyboardName] = MIDIFunc.noteOff({ |veloc, num, chan, src|
 			if (this.debug) { "off['%']['%'][num: %]\n".postf(keyboardName, synthDefName, num) };
-			if (controls[synthDefName].srcID.isNil or: {
-				controls[synthDefName].srcID.notNil and: {
-					controls[synthDefName].srcID == src
+			if (synthParams[synthDefName].srcID.isNil or: {
+				synthParams[synthDefName].srcID.notNil and: {
+					synthParams[synthDefName].srcID == src
 				}
 			}) {
 				CVCenter.scv[keyboardName][synthDefName][num].release;
 				CVCenter.scv[keyboardName][synthDefName][num] = nil;
 			};
-			if (sample) {
+			if (sampling) {
 				offTimes[num] = Main.elapsedTime;
 				sampleEvents[num].dur ?? {
 					sampleEvents[num].put(\dur, []);
@@ -332,30 +334,27 @@ before using it".format(synthDefName, keyboardName)).throw;
 
 		bend[keyboardName] = MIDIFunc.bend({ |bendVal, chan, src|
 			if (this.debug) { "bend['%']['%']: %\n".postf(keyboardName, synthDefName, bendVal) };
-			if (controls[synthDefName].srcID.isNil or: {
-				controls[synthDefName].srcID.notNil and: {
-					controls[synthDefName].srcID == src
+			if (synthParams[synthDefName].srcID.isNil or: {
+				synthParams[synthDefName].srcID.notNil and: {
+					synthParams[synthDefName].srcID == src
 				}
 			}) {
 				CVCenter.scv[keyboardName][synthDefName].do({ |synth, i|
-					synth.set(controls[synthDefName].bendControl, (i + bendSpec.map(bendVal / 16383)).midicps)
+					synth.set(synthParams[synthDefName].bendControl, (i + bendSpec.map(bendVal / 16383)).midicps)
 				})
 			}
 		});
 	}
 
-	addOutProxy { |synthDefName, numChannels=2, useNdef=false, out|
+	addOutProxy { |synthDefName, numChannels=2, useNdef=false, outbus|
 		var proxyName;
 		synthDefName ?? {
 			synthDefName = currentSynthDef;
 		};
-		out ?? {
-			out = controls[synthDefName].out;
-		};
+		// out ?? {
+		// 	out = synthParams[synthDefName].out;
+		// };
 		proxyName = (keyboardName ++ "Out").asSymbol;
-		"out before: %\n".postf(controls[synthDefName].out);
-		// controls[synthDefName].out_(Bus.audio(server, numChannels));
-		"out after: %\n".postf(controls[synthDefName].out);
 		if (useNdef.not) {
 			outProxy = NodeProxy.audio(server, numChannels);
 		} {
@@ -363,21 +362,23 @@ before using it".format(synthDefName, keyboardName)).throw;
 			outProxy = Ndef(proxyName);
 		};
 		outProxy.source = {
-			In.ar(controls[synthDefName].out, numChannels)
+			// In.ar(synthParams[synthDefName].out, numChannels)
+			In.ar(this.out, numChannels)
 		};
 		"out: %\n".postf(out);
-		outProxy.play(out);
+		outProxy.play(outbus ? this.out);
 	}
 
-	removeOutProxy { |synthDefName, out=0|
+	removeOutProxy { |synthDefName, outbus|
 		synthDefName ?? {
 			synthDefName = currentSynthDef;
 		};
-		controls[synthDefName].out_(out);
+		outbus !? { this.out_(outbus) };
 		outProxy.clear;
 	}
 
 	free { |synthDefName|
+		synthDefName = synthDefName.asSymbol;
 		synthDefName ?? {
 			synthDefName = currentSynthDef;
 		};
@@ -395,8 +396,8 @@ before using it".format(synthDefName, keyboardName)).throw;
 		synthDefName ?? {
 			synthDefName = currentSynthDef;
 		};
-		sample = onOff;
-		if (sample == false) {
+		sampling = onOff;
+		if (sampling == false) {
 			sampleEnd = Main.elapsedTime;
 			pdef ?? { pdef = [] };
 			sampleEvents.do { |e, num|
@@ -414,7 +415,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 			};
 			pbinds = sampleEvents.collect { |slot, num|
 				if (slot.isEmpty.not) {
-					items = [\instrument, synthDefName, controls[synthDefName].pitchControl, num.midicps]
+					items = [\instrument, synthDefName, synthParams[synthDefName].pitchControl, num.midicps]
 					++ slot.collect(Pseq(_, inf)).asPairs;
 					/*++ slot.collect { |v, k|
 						if (CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).notNil) {
