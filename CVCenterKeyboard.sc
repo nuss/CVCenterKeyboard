@@ -25,7 +25,7 @@ CVCenterKeyboard {
 	}
 
 	addSynthDef { |synthDefName, connectMidi = false|
-		this.prInitSynthDef(synthDefName, connectMidi);
+		this.prInitSynthDef(synthDefName.asSymbol, connectMidi);
 	}
 
 	*at { |keyboardName|
@@ -33,13 +33,13 @@ CVCenterKeyboard {
 	}
 
 	*newSynthDef { |synthDefName, keyboardName=\keyboard, connectMidi = true|
-		var instance = this.new(keyboardName);
+		var instance = this.new(keyboardName.asSymbol);
+		synthDefName = synthDefName.asSymbol;
 		instance.addSynthDef(synthDefName, connectMidi);
 		^instance;
 	}
 
 	prInitSynthDef { |synthDefName, connectMidi|
-		synthDefName = synthDefName.asSymbol;
 		SynthDescLib.at(synthDefName) ?? {
 			Error(
 				"The SynthDef '%' does not exist".format(synthDefName)
@@ -132,15 +132,10 @@ before using it".format(synthDefName, keyboardName)).throw;
 			synthParams[synthDefName].srcID = srcID;
 		};
 		outbus !? { this.out_(outbus) };
-		// synthParams[synthDefName].out ?? {
-		// 	synthParams[synthDefName].out = out;
-		// };
 
 		excemptArgs = excemptArgs.add(\gate);
 
 		tab ?? { tab = synthDefName };
-
-		"excemptArgs: %\n".postf(excemptArgs);
 
 		server.waitForBoot {
 			// SynthDef *should* have an \amp arg, otherwise it will sound for moment
@@ -163,13 +158,15 @@ before using it".format(synthDefName, keyboardName)).throw;
 		CVCenter.scv[keyboardName] ?? { CVCenter.scv.put(keyboardName, ()) };
 		if (CVCenter.scv[keyboardName][synthDefName].isNil) {
 			CVCenter.scv[keyboardName].put(synthDefName, Array.newClear(128));
-			MIDIClient.init;
-			// doesn't seem to work properly on Ubuntustudio 16
-			// possibly has to be done manually in QJackQtl...
-			if (connectMidi) {
-				try { MIDIIn.connectAll } { |error|
-					error.postln;
-					"MIDIIn.connectAll failed. Please establish the necessary connections manually".warn;
+			if (MIDIClient.initialized.not) {
+				MIDIClient.init;
+				// doesn't seem to work properly on Ubuntustudio 16
+				// possibly has to be done manually in QJackQtl...
+				if (connectMidi) {
+					try { MIDIIn.connectAll } { |error|
+						error.postln;
+						"MIDIIn.connectAll failed. Please establish the necessary connections manually".warn;
+					}
 				}
 			}
 		} {
@@ -212,19 +209,19 @@ before using it".format(synthDefName, keyboardName)).throw;
 	}
 
 	switchSynthDef { |synthDefName|
-		if (synthDefName.isNil) {
-			synthDefName = currentSynthDef;
-		} {
-			currentSynthDef = synthDefName;
-		};
+		synthDefName = synthDefName.asSymbol;
+		currentSynthDef = synthDefName;
 		this.free;
-		CVCenter.scv.put(synthDefName, nil!128);
+		CVCenter.scv.put(keyboardName, ());
+		CVCenter.scv[keyboardName].put(synthDefName, nil!128);
 		this.prInitKeyboard(synthDefName);
 	}
 
 	reInit { |synthDefName|
 		var args;
-		synthDefName ?? {
+		if (synthDefName.notNil) {
+			synthDefName = synthDefName.asSymbol;
+		} {
 			synthDefName = currentSynthDef;
 		};
 		args = SynthDescLib.at(synthDefName).controlDict.keys.asArray;
@@ -268,7 +265,6 @@ before using it".format(synthDefName, keyboardName)).throw;
 
 	// private
 	prInitKeyboard { |synthDefName|
-		"prInitKeyboard called for SynthDef %\n".postf(synthDefName);
 		on[keyboardName] = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var kbArgs = [
 				synthParams[synthDefName].pitchControl,
@@ -348,12 +344,11 @@ before using it".format(synthDefName, keyboardName)).throw;
 
 	addOutProxy { |synthDefName, numChannels=2, useNdef=false, outbus|
 		var proxyName;
-		synthDefName ?? {
+		if (synthDefName.notNil) {
+			synthDefName = synthDefName.asSymbol;
+		} {
 			synthDefName = currentSynthDef;
 		};
-		// out ?? {
-		// 	out = synthParams[synthDefName].out;
-		// };
 		proxyName = (keyboardName ++ "Out").asSymbol;
 		if (useNdef.not) {
 			outProxy = NodeProxy.audio(server, numChannels);
@@ -370,7 +365,9 @@ before using it".format(synthDefName, keyboardName)).throw;
 	}
 
 	removeOutProxy { |synthDefName, outbus|
-		synthDefName ?? {
+		if (synthDefName.notNil) {
+			synthDefName = synthDefName.asSymbol;
+		} {
 			synthDefName = currentSynthDef;
 		};
 		outbus !? { this.out_(outbus) };
@@ -378,22 +375,25 @@ before using it".format(synthDefName, keyboardName)).throw;
 	}
 
 	free { |synthDefName|
-		synthDefName = synthDefName.asSymbol;
-		synthDefName ?? {
+		if (synthDefName.notNil) {
+			synthDefName = synthDefName.asSymbol;
+		} {
 			synthDefName = currentSynthDef;
 		};
-		on !? { on.free };
-		off !? { off.free };
-		bend !? { bend.free };
+		on !? { on[keyboardName].free };
+		off !? { off[keyboardName].free };
+		bend !? { bend[keyboardName].free };
 		CVCenter.scv[keyboardName][synthDefName].do(_.release);
-		// CVCenter.scv[keyboardName].removeAt(synthDefName);
+		CVCenter.scv[keyboardName].removeAt(synthDefName);
 		CVCenter.scv.removeAt(keyboardName);
 	}
 
 	// start/stop sampling
 	activateSampling { |onOff = true, synthDefName|
 		var pbinds, items, pbproxy, last;
-		synthDefName ?? {
+		if (synthDefName.notNil) {
+			synthDefName = synthDefName.asSymbol;
+		} {
 			synthDefName = currentSynthDef;
 		};
 		sampling = onOff;
