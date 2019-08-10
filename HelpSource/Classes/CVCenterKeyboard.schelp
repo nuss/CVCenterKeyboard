@@ -4,14 +4,14 @@ categories:: Conductor>CVCenter, External Control>MIDI
 related:: Classes/CVCenter, Guides/UsingMIDI
 
 DESCRIPTION::
-CVCenterKeyboard lets you create a link::Guides/UsingMIDI##MIDI keyboard:: layout instantly from any SynthDef that provides
+CVCenterKeyboard lets you create a link::Guides/UsingMIDI#Playing notes on your MIDI keyboard#MIDI keyboard:: layout instantly from any SynthDef that provides
 a code::\gate:: key, meaning that a Synth that has been instiated upon receiving a note-on message
 gets finished when it gets a not-off message from an external MIDI keyboard. That allows for playing sustained notes that
 can be controlled through code::asr:: or code::adsr:: envelopes.
 
 Setting up the keyboard basically involves to steps: First instantiating a keyboard
 (through link::#-new:: or link::#-newSynthDef::) and then setting up the keyboard
-for a given SynthDef through link::-setUpControls:: (will start the Server).
+for a given SynthDef through link::#-setUpControls:: (will start the Server).
 
 You can assign four arbitray controls from your SynthDef to the following standard parameters
 
@@ -39,8 +39,9 @@ METHOD:: all
 returns:: an link::Classes/Event::, containing all instantiated Keyboards
 
 METHOD:: new
-argument:: name
-Instanciate a new keyboard under code::name::. The keyboard will be accessible under code::CVCenterKeyboard.all[name]::
+Instanciate a new keyboard under code::keyboardName::. The keyboard will be accessible under code::CVCenterKeyboard.all[name]::
+argument:: keyboardName
+a link::Classes/String:: or link::Classes/Symbol::, denoting the name of the new keyboard
 returns:: a CVCenterKeyboard
 
 METHOD:: newSynthDef
@@ -82,7 +83,7 @@ argument:: includeInCVCenter
 an link::Classes/Array:: of link::Classes/Symbol::s or link::Classes/String::s, denoting those of the afore described arguments which emphasis::should:: appear in CVCenter though they have already been assigned to the keyboard
 argument:: theServer
 optional: the link::Classes/Server:: to rum the link::Classes/Synth:: on
-argument:: out
+argument:: outbus
 optional: an link::Classes/Integer:: denoting a default output bus (can be set in the SynthDef beforehand as well)
 argument:: deactivateDefaultWidgetActions
 a link::Classes/Boolean::, denoting if default widget actions should be deactivated (default: code::true::)
@@ -159,6 +160,32 @@ argument:: synthDefName
 optional - a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: you want to reinitialize.
 returns:: a CVCenterKeyboard
 
+METHOD:: switchSynthDef
+Switch to a different SynthDef. The SynthDef must have been added emphasis::and:: set up beforehand.
+argument:: synthDefName
+returns:: a CVCenterKeyboard
+
+DISCUSSION::
+code::
+// Create a new SynthDef
+(
+SynthDef.new(\square, {
+	var sig, env;
+	env = EnvGen.kr(Env.adsr, \gate.kr(1), doneAction: Done.freeSelf);
+	sig = Pulse.ar(\freq.kr(220), \width.kr(0.5));
+	sig = sig!2 * env;
+	Out.ar(\out.kr(0), sig * \veloc.kr(1) * \amp.kr(0.5));
+}).add;
+)
+
+~kb.addSynthDef(\square);
+~kb.setUpControls(\square, \sq, bendControl: \freq);
+// switch keyboard to new SynthDef
+~kb.switchSynthDef(\square);
+// ... and back
+~kb.switchSynthDef(\pmosc);
+::
+
 METHOD:: bendSpec
 Set or get the link::Classes/ControlSpec:: for the 'bend' arg within the currently used SynthDef, denoted by the arg code::bendControl:: in link::#-setUpControls::,
 usually controlled through pitch bend wheel on a MIDI keyboard. By default this will be
@@ -193,7 +220,7 @@ argument:: numChannels
 an link::Classes/Integer::, denoting the number of output channels
 argument:: useNdef
 if set to code::true:: the resulting proxy will be an Ndef rather than a NodeProxy
-argument:: out
+argument:: outbus
 the output bus to which the proxy should play. If omitted the out bus of the SynthDef is assumed
 returns:: a CVCenterKeyboard
 
@@ -282,11 +309,6 @@ returns:: a link::Classes/Symbol::, denoting the SynthDef currently used with th
 METHOD:: synthDefNames
 returns:: an link::Classes/Array:: of link::Classes/Symbol::s, denoting all SynthDefs that have been added to the CVCenterKeyboard instance
 
-METHOD:: switchSynthDef
-Switch to a different SynthDef. The SynthDef must have been added emphasis::and:: set up beforehand.
-argument:: synthDefName
-returns:: a CVCenterKeyboard
-
 METHOD:: keyboardName
 returns:: a link::Classes/Symbol:: representing the name of the CVCenterKeyboard. The name serves as key in code::CVCenterkeyboard.all::
 
@@ -295,7 +317,7 @@ returns:: the link::Classes/Server:: to be used with the CVCenterKeyboard. If no
 to code::Server.default::
 
 METHOD:: wdgtNames
-returns:: an link::Classes/Array:: of link::Classes/Symbols::, denoting the link::Classes/CVWidget::S that have been created with link::#-setUpControls::
+returns:: an link::Classes/Array:: of link::Classes/Symbol::s, denoting the link::Classes/CVWidget::S that have been created with link::#-setUpControls::
 
 METHOD:: pdef
 returns:: an link::Classes/Array:: of link::Classes/Pdef::s that represent the currently recorded sequences or code::nil:: if no sequences exist
