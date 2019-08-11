@@ -284,7 +284,7 @@ code::
 // you should hear the sequence that you've just played
 
 // introspection into the generated Pdef
-// should post [ Pdef('pmosc0') ]
+// should post [ Pdef('pmosc-0') ]
 ~kb.pdef;
 // each Pdef can be handled like any regular Pdef
 // i.e. they should respond to methods like 'pause', 'resume', 'play', 'stop', etc.
