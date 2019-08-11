@@ -137,7 +137,7 @@ Spec.add(\modphase, \phase);
 	\out, // the argument setting the out bus
 );
 )
-// in case a keyboard doesn't play... won't do no harm
+// in case a keyboard doesn't play. Or if controls are not set properly... won't do no harm
 ~kb.reInit(\pmosc);
 ::
 
@@ -171,7 +171,7 @@ code::
 (
 SynthDef.new(\square, {
 	var sig, env;
-	env = EnvGen.kr(Env.adsr, \gate.kr(1), doneAction: Done.freeSelf);
+	env = EnvGen.kr(Env.adsr(\atk.kr(0.03), \dec.kr(0.5), \sust.kr(0.5), \rel.kr(0.7)), \gate.kr(1), doneAction: Done.freeSelf);
 	sig = Pulse.ar(\freq.kr(220), \width.kr(0.5));
 	sig = sig!2 * env;
 	Out.ar(\out.kr(0), sig * \veloc.kr(1) * \amp.kr(0.5));
@@ -182,8 +182,11 @@ SynthDef.new(\square, {
 ~kb.setUpControls(\square, \sq, bendControl: \freq);
 // switch keyboard to new SynthDef
 ~kb.switchSynthDef(\square);
+// if controls are not set properly
+~kb.reInit;
 // ... and back
 ~kb.switchSynthDef(\pmosc);
+~kb.reInit;
 ::
 
 METHOD:: bendSpec
@@ -261,12 +264,12 @@ returns:: a link::Classes/NodeProxy:: or an link::Classes/Ndef:: or code::nil:: 
 SUBSECTION:: Recording sequences
 
 METHOD:: activateSampling
-Calling this method will start (or stop) recording strokes on the external MIDI keyboard into link::Classes/Pattern:: sequencer. For each note on
+Calling this method will start (or stop) recording strokes on the external MIDI keyboard into a link::Classes/Pattern:: sequencer. For each note on
 the external keyboard (0-127) a separate link::Classes/Pseq:: is created where code::noteOn:: and code::notOff:: will create a sequence of durations composed of
 numbers (as long as a note is held) and link::Classes/Rest::s. Current control values should also be respected. Each of the recorded notes and the Synth control's
 current values are put into a link::Classes/Pbind:: (128 separate Pbinds) and get wrapped into a link::Classes/Ppar:: which in turn gets wrapped in a link::Classes/Pdef::.
 The generated sequence should start playing immediately after calling code::<CVCenterKeyboard instance>.activateSampling(false)::. The resulting Pdefs can be queried with link::#-pdef::.
-You may record as many sequences as you like. Each of them will be stored in a Pdef under a key that is a combination of the SynthDef's name and a numerical value (e.g. code::Pdef(\pmosc)::).
+You may record as many sequences as you like. Each of them will be stored in a Pdef under a key that is a combination of the SynthDef's name and a numerical counter (e.g. code::Pdef('pmosc-0')::).
 argument:: onOff
 a link::Classes/Boolean::, indicating whether to start or stop sampling (default: code::true::).
 argument:: synthDefName

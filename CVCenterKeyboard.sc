@@ -428,7 +428,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 			}.takeThese(_.isNil);
 			if (pbinds.isEmpty.not) {
 				// pbinds.do { |pb| pb.patternpairs.postln };
-				pdef = pdef.add(Pdef((synthDefName ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
+				pdef = pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
 				pdef.last.play;
 				#sampleStart, sampleEnd = nil!2;
 				"\nsampling keyboard events finished, should start playing now\n".inform;
