@@ -23,7 +23,7 @@ DEFINITIONLIST::
 ## velocControl
 || whatever you want to control through keyboard velocity
 ## bendControl
-|| whatever you want to control through the pitch bend weal (the internal control
+|| whatever you want to control through the pitch bend wheel (the internal control
 	will automatically assigned a spec code::ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz")::)
 ::
 
