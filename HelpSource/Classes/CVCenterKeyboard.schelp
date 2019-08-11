@@ -19,7 +19,7 @@ DEFINITIONLIST::
 ## outControl
 || the arg that sets the output bus of the Synth
 ## keyboardControl
-|| what ever you want to play with your keyboard (e.g. Frequency). You'll get midi notes back
+|| whatever you want to play with your keyboard (e.g. Frequency). You'll get midi notes back
 ## velocControl
 || whatever you want to control through keyboard velocity
 ## bendControl

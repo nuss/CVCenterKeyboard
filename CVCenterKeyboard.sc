@@ -403,7 +403,6 @@ before using it".format(synthDefName, keyboardName)).throw;
 			sampleEvents.do { |e, num|
 				// add last event - not considered within noteOn, notOff
 				e.dur !? {
-					// [num, this.prDurSum(e.dur)].postln;
 					if (e.dur.last.isRest) {
 						last = sampleEnd - onTimes[num];
 					} {
