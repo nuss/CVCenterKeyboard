@@ -54,7 +54,7 @@ CVCenterKeyboard {
 
 		synthDefNames ?? { synthDefNames = [] };
 		synthDefNames.indexOf(synthDefName) ?? {
-			synthDefNames = synthDefNames.add(synthDefName.asSymbol);
+			synthDefNames = synthDefNames.add(synthDefName);
 		};
 
 
