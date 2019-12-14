@@ -1,7 +1,7 @@
 CVCenterKeyboard {
 	classvar <all;
 	var <keyboardName, <synthDefNames, synthParams;
-	var <>bendSpec, <>out, <server;
+	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, <wdgtNames, <outProxy;
 	var sampling = false, sampleEvents, <pdef;
 	var on, off, bend, namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
@@ -265,6 +265,9 @@ before using it".format(synthDefName, keyboardName)).throw;
 
 	// private
 	prInitKeyboard { |synthDefName|
+		group ?? {
+			group = ParGroup.new;
+		};
 		on[keyboardName] = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var kbArgs = [
 				synthParams[synthDefName].pitchControl,
@@ -287,7 +290,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 					synthParams[synthDefName].srcID == src
 				}
 			}) {
-				CVCenter.scv[keyboardName][synthDefName][num] = Synth(synthDefName, argsValues);
+				CVCenter.scv[keyboardName][synthDefName][num] = Synth(synthDefName, argsValues, group);
 			};
 			if (sampling) {
 				onTimes[num] = Main.elapsedTime;
@@ -310,7 +313,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 		});
 
 		off[keyboardName] = MIDIFunc.noteOff({ |veloc, num, chan, src|
-			if (this.debug) { "off['%']['%'][num: %]\n".postf(keyboardName, synthDefName, num) };
+			if (this.debug) { "off['%']['%'][num: %]\n\n".postf(keyboardName, synthDefName, num) };
 			if (synthParams[synthDefName].srcID.isNil or: {
 				synthParams[synthDefName].srcID.notNil and: {
 					synthParams[synthDefName].srcID == src
@@ -342,7 +345,7 @@ before using it".format(synthDefName, keyboardName)).throw;
 		});
 	}
 
-	addOutProxy { |synthDefName, numChannels=2, useNdef=false, outbus|
+	addOutProxy { |synthDefName, numChannels=2, useNdef=false, outbus, play=true|
 		var proxyName;
 		if (synthDefName.notNil) {
 			synthDefName = synthDefName.asSymbol;
@@ -361,7 +364,9 @@ before using it".format(synthDefName, keyboardName)).throw;
 			In.ar(this.out, numChannels)
 		};
 		"out: %\n".postf(out);
-		outProxy.play(outbus ? this.out);
+		if (play) {
+			outProxy.play(outbus ? this.out);
+		}
 	}
 
 	removeOutProxy { |synthDefName, outbus|
@@ -458,5 +463,9 @@ before using it".format(synthDefName, keyboardName)).throw;
 		} {
 			indices.do { |i| pdef[i].clear };
 		}
+	}
+
+	freeHangingNodes {
+		group.deepFree;
 	}
 }
