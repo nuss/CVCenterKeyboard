@@ -1,0 +1,328 @@
+TITLE:: CVCenterKeyboard
+summary:: A MIDI keyboard implementation for CVCenter
+categories:: Conductor>CVCenter, External Control>MIDI
+related:: Classes/CVCenter, Guides/UsingMIDI
+
+DESCRIPTION::
+CVCenterKeyboard lets you create a link::Guides/UsingMIDI#Playing notes on your MIDI keyboard#MIDI keyboard:: layout instantly from any SynthDef that provides
+a code::\gate:: key, meaning that a Synth that has been instiated upon receiving a note-on message
+gets finished when it gets a not-off message from an external MIDI keyboard. That allows for playing sustained notes that
+can be controlled through code::asr:: or code::adsr:: envelopes.
+
+Setting up the keyboard basically involves to steps: First instantiating a keyboard
+(through link::#-new:: or link::#-newSynthDef::) and then setting up the keyboard
+for a given SynthDef through link::#-setUpControls:: (will start the Server).
+
+You can assign four arbitray controls from your SynthDef to the following standard parameters
+
+DEFINITIONLIST::
+## outControl
+|| the arg that sets the output bus of the Synth
+## keyboardControl
+|| whatever you want to play with your keyboard (e.g. Frequency). You'll get midi notes back
+## velocControl
+|| whatever you want to control through keyboard velocity
+## bendControl
+|| whatever you want to control through the pitch bend wheel (the internal control
+	will automatically assigned a spec code::ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz")::)
+::
+
+All other controls you may have defined in your SynthDef will automatically be picked up by the setup process and get assigned appropriate widgets automatically.
+
+Especially after loading an already existing CVCenter setup you possibly have to re-init the keyboard through link::#-reInit::
+
+Additionally an output proxy - a link::Classes/NodeProxy:: or an link::Classes/Ndef:: - can be added through link::#-addOutProxy:: which allows you to do filtering and all kinds of NodeProxy trickery.
+
+CLASSMETHODS::
+
+METHOD:: all
+returns:: an link::Classes/Event::, containing all instantiated Keyboards
+
+METHOD:: new
+Instanciate a new keyboard under code::keyboardName::. The keyboard will be accessible under code::CVCenterKeyboard.all[name]::
+argument:: keyboardName
+a link::Classes/String:: or link::Classes/Symbol::, denoting the name of the new keyboard
+returns:: a CVCenterKeyboard
+
+METHOD:: newSynthDef
+argument:: synthDefName
+a link::Classes/Symbol:: or link::Classes/String::, identifying an already declared link::Classes/SynthDef:: to be used with the new CVCenterKeyboard instance.
+The SynthDef must have defined an envelop and a code::\gate:: argument.
+argument:: keyboardName
+a link::Classes/Symbol:: or link::Classes/String::, identifying the CVCenterKeyboard. The keyboard will be accessible at this key within the code::CVCenter.all:: variable.
+argument:: connectMidi
+if set to code::true:: immediately connect the external MIDI keyboard (default: code::true::)
+returns:: a CVCenterKeyboard
+
+METHOD:: at
+argument:: keyboardName
+returns:: CVCenterKeyboard.all[keyboardName] (a CVCenterKeyboard instance)
+
+INSTANCEMETHODS::
+
+METHOD:: setUpControls
+Set up the keyboard for the specified link::Classes/SynthDef::. The SynthDef must already have been added beforehand,
+either when creating the keyboard with link::#*newSynthDef:: or link::#-addSynthDef::. code::setUpControls:: will analyze
+the internal control structure of the SynthDef and create a set of appropriate link::Classes/CVWidget::s within link::Classes/CVCenter::.
+Some controls, however, must be reserved for the control through the MIDI keyboard keys: an argument for pitch, one for velocity
+and a bend argument as well as one for the output bus.
+
+argument:: synthDefName
+the link::Classes/SynthDef::'s name
+argument:: prefix
+an optional link::Classes/Symbol:: or link::Classes/String:: for CVCenter, to make sure the resulting widgets get a unique name.
+argument:: pitchControl
+a link::Classes/Symbol:: or link::Classes/String:: denoting the keyboard key, incoming note. Default: code::\freq::
+argument:: velocControl
+a link::Classes/Symbol:: or link::Classes/String:: denoting velocity coming with the note. Default: code::\veloc::
+argument:: bendControl
+a link::Classes/Symbol:: or link::Classes/String:: denoting the pitch bend wheel. Default: code::\bend::
+argument:: outControl
+a link::Classes/Symbol:: or link::Classes/String:: denoting the output bus. Default: code::\out::
+argument:: includeInCVCenter
+an link::Classes/Array:: of link::Classes/Symbol::s or link::Classes/String::s, denoting those of the afore described arguments which emphasis::should:: appear in CVCenter though they have already been assigned to the keyboard
+argument:: theServer
+optional: the link::Classes/Server:: to rum the link::Classes/Synth:: on
+argument:: outbus
+optional: an link::Classes/Integer:: denoting a default output bus (can be set in the SynthDef beforehand as well)
+argument:: deactivateDefaultWidgetActions
+a link::Classes/Boolean::, denoting if default widget actions should be deactivated (default: code::true::)
+argument:: srcID
+optional: an link::Classes/Integer::, denoting the source ID of a MIDI device (see also: link::Guides/UsingMIDI::)
+argument:: tab
+optional: a link::Classes/Symbol:: or link::Classes/String:: denoting the tab in which the CVWidgets for this given Synth will appear. If none is given the tab name will default the the SynthDef's name
+returns:: a CVCenterKeyboard
+
+DISCUSSION::
+
+code::
+// define a SynthDef
+// notice the enevlope and gate
+(
+SynthDef(\pmosc, {
+	var env = Env.adsr(\atk.kr(0.01), \dec.kr(0.3), \sust.kr(0.5), \rel.kr(0.7));
+	var son = PMOsc.ar(
+		\carfreq.kr(100),
+		\modfreq.kr(300!2, 0.02),
+		\pmindex.kr(0!2, 0.02),
+		\modphase.kr(0!2, 0.02)
+	);
+	env = EnvGen.ar(env, \gate.kr(1), doneAction: Done.freeSelf);
+	Out.ar(\out.kr(0), son * \veloc.kr(1) * \amp.kr(0.5) * env);
+}).add;
+)
+
+// set a couple of useful specs ahead from keyboard creation
+(
+Spec.add(\atk, #[0.01, 1.0]);
+Spec.add(\dec, #[0.1, 2.0]);
+Spec.add(\sust, #[0.1, 1.0]);
+Spec.add(\rel, #[0.1, 2.0, \exp]);
+Spec.add(\carfreq, #[40, 2000, \exp]);
+Spec.add(\modfreq, #[40, 2000, \exp]);
+Spec.add(\pmindex, #[0, 30]);
+Spec.add(\modphase, \phase);
+)
+
+// create a new keyboard and add the given SynthDef
+~kb = CVCenterKeyboard.newSynthDef(\pmosc, \myKeyboard);
+
+(
+~kb.setUpControls(
+	\pmosc, // the SynthDef
+	\kb, // a prefix for CVCenter, should make shure the resulting widgets have a unique names
+	\carfreq, // the pitch argument, to be controlled through the MIDI keyboard keys
+	\veloc, // the velocity argument
+	\carfreq, // the bend argument - will often be the same as the pitch argument
+	\out, // the argument setting the out bus
+);
+)
+// in case a keyboard doesn't play. Or if controls are not set properly... won't do no harm
+~kb.reInit(\pmosc);
+::
+
+
+METHOD:: addSynthDef
+Add a new link::Classes/SynthDef:: to an already existing CVCenterKeyboard.
+argument:: synthDefName
+A link::Classes/String:: or link::Classes/Symbol::, denoting the name of the SynthDef.
+The SynthDef must already exist.
+argument:: connectMidi
+A link::Classes/Boolean::, indicating whether the given SynthDef should immediately be
+connected to the physical keyboard. Default: code::false::.
+returns:: a CVCenterKeyboard
+
+METHOD:: reInit
+It may happen that the physical keyboard doesn't respond, e.g. after loading a link::Classes/CVCenter#*loadSetup#CVCenter setup::.
+This short command will recreate the keyboard internally without any further user interaction. Optionally the name of the SynthDef for
+which the keyboard shall recreated may be given.
+argument:: synthDefName
+optional - a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: you want to reinitialize.
+returns:: a CVCenterKeyboard
+
+METHOD:: switchSynthDef
+Switch to a different SynthDef. The SynthDef must have been added emphasis::and:: set up beforehand.
+argument:: synthDefName
+returns:: a CVCenterKeyboard
+
+DISCUSSION::
+code::
+// Create a new SynthDef
+(
+SynthDef.new(\square, {
+	var sig, env;
+	env = EnvGen.kr(Env.adsr(\atk.kr(0.03), \dec.kr(0.5), \sust.kr(0.5), \rel.kr(0.7)), \gate.kr(1), doneAction: Done.freeSelf);
+	sig = Pulse.ar(\freq.kr(220), \width.kr(0.5));
+	sig = sig!2 * env;
+	Out.ar(\out.kr(0), sig * \veloc.kr(1) * \amp.kr(0.5));
+}).add;
+)
+
+~kb.addSynthDef(\square);
+~kb.setUpControls(\square, \sq, bendControl: \freq);
+// switch keyboard to new SynthDef
+~kb.switchSynthDef(\square);
+// if controls are not set properly
+~kb.reInit;
+// ... and back
+~kb.switchSynthDef(\pmosc);
+~kb.reInit;
+::
+
+METHOD:: bendSpec
+Set or get the link::Classes/ControlSpec:: for the 'bend' arg within the currently used SynthDef, denoted by the arg code::bendControl:: in link::#-setUpControls::,
+usually controlled through pitch bend wheel on a MIDI keyboard. By default this will be
+
+code::ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz")::
+
+which results in
+
+code::ControlSpec(-8.1757989156437, 8.1757989156437, 'linear', 0, 0, " hz")::
+
+returns:: a link::Classes/ControlSpec::
+
+METHOD:: out
+Set or get the CVCenterKeyboard out bus. Changes are picked up immediately, regardless of if the output is wrapped in a NodeProxy or not.
+
+METHOD:: free
+argument:: synthDefName
+optional - a link::Classes/String:: or link::Classes/Symbol::, denoting the SynthDef that should be removed from the keyboard. If not given all
+SynthDef currently stored with the keyboard will be removed
+returns:: a CVCenterKeyboard
+
+SUBSECTION:: Filtering
+
+METHOD:: addOutProxy
+The method creates a link::Classes/NodeProxy:: or optionally an link::Classes/Ndef:: and routes the keyboard's output through it. This means one
+can easily add filters (e.g. through a link::Reference/NodeProxy_roles##NodeProxy role::) and do other kinds of NodeProxy trickery. If code::useNdef:: is set to code::true:: the resulting
+Ndef will also appear in an link::Classes/NdefMixer::.
+argument:: synthDefName
+a link::Classes/String:: or link::Classes/Symbol::, denoting a SynthDef, optional - if not given the SynthDef name that is returned by link::#-currentSynthDef:: will be used.
+This is important in so far as the method needs to know the name of the out argument in the SynthDef.
+argument:: numChannels
+an link::Classes/Integer::, denoting the number of output channels
+argument:: useNdef
+if set to code::true:: the resulting proxy will be an Ndef rather than a NodeProxy
+argument:: outbus
+the output bus to which the proxy should play. If omitted the out bus of the SynthDef is assumed
+returns:: a CVCenterKeyboard
+
+DISCUSSION::
+code::
+~kb.addOutProxy(useNdef: true);
+~kb.outProxy; // an Ndef
+
+// add a filter
+(
+~kb.outProxy[1] = \filter -> { |in|
+	FreqShift.ar(in, \freq.kr(100!2), \phase.kr(0!2));
+}
+)
+
+// add controls to CVCenter
+// add a prefix to the resulting CVWidgets to avoid name clashes
+~kb.outProxy.cvcGui(prefix: \filt);
+
+// instanciate an NdefMixer
+// the Ndef should appear under a key which is the combination of
+// keyboardName and 'Out'. E.g. Ndef(\myFunkyKeyboardOut)
+NdefMixer.new;
+::
+
+METHOD:: removeOutProxy
+The complementary method to code::addOutProxy:: which removes a once created proxy again. Calling this
+method should work seemlessly like code::addOutProxy::, meaning the playing the keyboard should produce the same sound without filters applied.
+argument:: synthDefName
+a link::Classes/String:: or a link::Classes/Symbol::, denoting the SynthDef name. If not given the link::#~currentSynthDef:: is assumed
+argument:: out
+the output bus to which the keyboard should play. If none is given code::0:: is assumed
+returns:: a CVCenterKeyboard
+
+METHOD:: outProxy
+returns:: a link::Classes/NodeProxy:: or an link::Classes/Ndef:: or code::nil:: if not output proxy exists
+
+SUBSECTION:: Recording sequences
+
+METHOD:: activateSampling
+Calling this method will start (or stop) recording strokes on the external MIDI keyboard into a link::Classes/Pattern:: sequencer. For each note on
+the external keyboard (0-127) a separate link::Classes/Pseq:: is created where code::noteOn:: and code::notOff:: will create a sequence of durations composed of
+numbers (as long as a note is held) and link::Classes/Rest::s. Current control values should also be respected. Each of the recorded notes and the Synth control's
+current values are put into a link::Classes/Pbind:: (128 separate Pbinds) and get wrapped into a link::Classes/Ppar:: which in turn gets wrapped in a link::Classes/Pdef::.
+The generated sequence should start playing immediately after calling code::<CVCenterKeyboard instance>.activateSampling(false)::. The resulting Pdefs can be queried with link::#-pdef::.
+You may record as many sequences as you like. Each of them will be stored in a Pdef under a key that is a combination of the SynthDef's name and a numerical counter (e.g. code::Pdef('pmosc-0')::).
+argument:: onOff
+a link::Classes/Boolean::, indicating whether to start or stop sampling (default: code::true::).
+argument:: synthDefName
+optional - a link::Classes/String::, denoting the SynthDef to be used with recording.
+returns:: a CVCenterKeyboard
+
+DISCUSSION::
+code::
+~kb.activateSampling;
+// play some notes on your keyboard
+~kb.activateSampling(false);
+// you should hear the sequence that you've just played
+
+// introspection into the generated Pdef
+// should post [ Pdef('pmosc-0') ]
+~kb.pdef;
+// each Pdef can be handled like any regular Pdef
+// i.e. they should respond to methods like 'pause', 'resume', 'play', 'stop', etc.
+// as convenience method you may use 'clearSamples' to clear Pdefs at given indices
+// or all of them at once (if no indices are provided)
+~kb.clearSamples;
+::
+
+METHOD:: clearSamples
+Calling this method will clear the link::Classes/Pdef::s that have been generated through link::#-activateSampling::.
+If one or more indices are given only the Pdefs at the given indices will be cleared.
+argument::  ... indices
+One or more comma-separated link::Classes/Integer::s, denoting the Pdefs that should be cleared from the currently recorded sequences (optional)
+returns:: a CVCenterKeyboard
+
+SUBSECTION:: Debugging and introspection
+
+METHOD:: debug
+Show some useful debugging info when playing the keyboard (triggered by code::noteOn::, code::noteOff:: and code::bend:: messages coming from the external MIDI keyboard)
+
+METHOD:: currentSynthDef
+The CVCenterKeyboard must have been set up through calling link::#-setUpControls:: before.
+returns:: a link::Classes/Symbol::, denoting the SynthDef currently used with the CVCenterKeyboard instance
+
+METHOD:: synthDefNames
+returns:: an link::Classes/Array:: of link::Classes/Symbol::s, denoting all SynthDefs that have been added to the CVCenterKeyboard instance
+
+METHOD:: keyboardName
+returns:: a link::Classes/Symbol:: representing the name of the CVCenterKeyboard. The name serves as key in code::CVCenterkeyboard.all::
+
+METHOD:: server
+returns:: the link::Classes/Server:: to be used with the CVCenterKeyboard. If none is passed in with link::#-setUpControls:: it will default
+to code::Server.default::
+
+METHOD:: wdgtNames
+returns:: an link::Classes/Array:: of link::Classes/Symbol::s, denoting the link::Classes/CVWidget::S that have been created with link::#-setUpControls::
+
+METHOD:: pdef
+returns:: an link::Classes/Array:: of link::Classes/Pdef::s that represent the currently recorded sequences or code::nil:: if no sequences exist
+
+PRIVATE::sample, prResetSampling, prMidiInit, prDurSum, initClass, prInitCVs, prInitSynthDef, init, prAddWidgetActionsForKeyboard, prInitKeyboard
