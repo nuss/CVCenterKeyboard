@@ -1,27 +1,33 @@
 CVCenterKeyboardSelect {
-	classvar <allSelects;
-	var <srcID, <keyboardList;
-	var <window;
+	classvar <window;
+	classvar <srcID, <keyboardList;
 
-	*new { |srcID|
-		^super/*.newCopyArgs(srcID)*/.new.init;
+	*front {
+		var pop;
+		CVCenterKeyboard.all ?? {
+			Error("Create at least one new CVCenterKeyboard before creating a select").throw;
+		};
+		window ?? {
+			window = Window("Keyboards", Rect(0, 0, 350, 100));
+			pop = PopUpMenu(window, window.view.bounds.insetBy(30));
+			CVCenter.use(\keyboards, tab: \default, svItems: CVCenterKeyboard.all.keys.asArray.sort);
+			CVCenter.at(\keyboards).connect(pop);
+		};
+		window.front
 	}
 
-	init {
-		keyboardList = CVCenterKeyboard.allKeyboards.keys.asArray.sort;
-		CVCenter.use(\keyboards, [0, keyboardList.lastIndex, \lin, 1.0, 0], 0, \default, svItems: keyboardList);
-	}
-
-	srcID_ { |uid|
-		srcID = uid;
-		// TODO: set source ID select to uid
-	}
-
-	front {
-		if (window.notNil and: { window.isClosed.not }) {
-			window.front;
-		} {
-			window = Window()
-		}
-	}
+	// srcID_ { |uid|
+	// 	srcID = uid;
+	// 	// TODO: set source ID select to uid
+	// }
+	//
+	// front {
+	// 	var pop;
+	// 	if (window.isNil) {
+	// 		window = Window("Keyboards", Rect(0, 0, 350, 100));
+	// 		pop = PopUpMenu(window, window.view.bounds.insetBy(30));
+	// 		CVCenter.at(name).connect(pop);
+	// 	};
+	// 	window.front;
+	// }
 }
