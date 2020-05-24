@@ -1,0 +1,89 @@
+TITLE:: CVCenterKeyboardSelect
+summary:: A GUI extension for CVCenterKeyboard that lets you choose among the SynthDefs stored with the keyboard. Can be controlled through OSC.
+categories:: GUI>CVCenter, External Control>MIDI
+related:: Classes/CVCenterKeyboard, Classes/CVCenter
+
+DESCRIPTION::
+A CVCenterKeyboardSelect may be used in connection with a link::Classes/CVCenterKeyboard:: and allows you to select the Synth that's to be controlled through your MIDI keyboard in a GUI or an external OSC controller (e.g. TouchOSC). A CVCenterKeyboardSelect can be created through the class' link::#*new:: method described below described.
+
+CLASSMETHODS::
+
+METHOD:: new
+Create a new CVCenterKeyboardSelect instance. Note that any CVCenterKeyboardSelect will be dependant on an already existing CVCenterKeyboard instance.
+
+ARGUMENT:: keyboardDef
+a link::Classes/CVCenterKeyboard:: instance. The new CVCenterKeyboardSelect will automatically pick up the list of link::Classes/SynthDef::s already added to the CVCenterKeyboard and add their names to the select's items.
+
+ARGUMENT:: tab
+(optional) the method automatically creates a widget (a link::Classes/CVWidgetKnob::) in link::Classes/CVCenter:: that is connected to the selection, letting you select a SynthDef through a slider. By default this widget will be placed in the code::'default':: tab of CVCenter.
+
+returns:: a new CVCenterKeyboardSelect
+
+METHOD:: allSelects
+
+returns:: an link::Classes/Event:: holding all currently existing CVCenterKeyboardSelect instances.
+
+PRIVATE:: initClass
+
+INSTANCEMETHODS::
+
+METHOD:: front
+Open the GUI
+
+METHOD:: addOSC
+Make keyboard SynthDefs selectable through OSC: A CVCenterKeyboardSelect makes use of link::Classes/CVWidgetKnob::s (as part of link::Classes/CVCenter::). A CVWidgetKnob not only has aGUI that lets you set values through sliders. It also provides easy OSC (and MIDI) connectabilty.
+
+When instantiating a CVCenterKeyboardSelect through the link::#*new:: method you already create a CVWidgetKnob that lets you select a SynthDef for playing. This enough for the SC GUI on your computer but not yet suitable for an OSC controller that does not know about drop-down menus like e.g. TouchOSC.
+
+Hence, the method is designed for controllers that let you create your own interface and offer the following elements:
+DEFINITIONLIST::
+## push buttons
+|| buttons that upon click jump to 1 (or the "clicked" position) and on release back to 0 ("neutral" position)
+## labels
+|| labels that display a text that can be set through OSC
+::
+
+A select in TouchOSC could look e.g. like the following screenshot: image::touchosc_select.png#A custom select in TouchOSC::
+
+By calling code::addOSC:: on the CVCenterKeyboardSelect instance the following happens: Two more CVWidgetKnobs will be added to CVCenter. Both cause the select to step through its items, one descending, the other one ascending. Any time a switch to a new SynthDef happens the SynthDef's name is send to the controller, setting the label.
+
+ARGUMENT:: extIP
+The IP address of the external controller
+
+ARGUMENT:: listenerPort
+The port on which the external controller will emphasis::listen::.
+
+ARGUMENT:: prevSynthCmd
+The OSC command name for the descending select button (labeled with a left arrow in the screenshot). E.g. code::'/previous_synth'::.
+NOTE:: If you have more than one CVCenterKeyboardSelect their commands must be unique. Otherwise you would switch all CVCenterKeyboardSelects at once.::
+
+ARGUMENT:: nextSynthCmd
+The OSC command name for the ascending select button (labeled with a right arrow in the screenshot)
+
+ARGUMENT:: nameCmd
+The OSC command name under which the external controller will respond to the SynthDef names sent from SC.
+
+METHOD:: removeOSC
+Removes all OSC listeners. Add new ones by calling link::#-addOSC:: again.
+
+SECTION:: Member Variables
+
+METHOD:: keyboardDef
+
+returns:: the CVCenterKeyboard for which the CVCenterKeyboardSelect was created.
+
+METHOD:: window
+
+returns:: the Window holding the select.
+
+METHOD:: tab
+
+returns:: the CVCenter tab where CVWidgets belonging to this instance of CVCenterKeyboardSelect have been placed.
+
+EXAMPLES::
+
+code::
+(some example code)
+::
+
+PRIVATE:: init, keyboardDef, window, tab

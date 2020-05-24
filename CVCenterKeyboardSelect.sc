@@ -1,7 +1,6 @@
 CVCenterKeyboardSelect {
 	classvar <allSelects;
 	var <keyboardDef;
-	var <>prevSynthCmd = "/prev", <>nextSynthCmd = "/next", <>nameCmd = "/set_keyboard_name";
 	var <window, <tab = \default;
 	var kbDefName = \keyboard, dependantFunc;
 
@@ -85,11 +84,17 @@ CVCenterKeyboardSelect {
 
 	removeOSC {
 		var wdgt = CVCenter.cvWidgets[kbDefName];
+		var up = CVCenter.cvWidgets[kbDefName ++ ' next'];
+		var down = CVCenter.cvWidgets[kbDefName ++ ' prev'];
+
 		wdgt !? {
 			if (wdgt.wdgtActions.notNil and:{ wdgt.wdgtActions['set name'].notNil }) {
 				CVCenter.cvWidgets[kbDefName].removeAction('set name')
 			}
-		}
+		};
+
+		up !? { up.oscDisconnect };
+		down !? { down.oscDisconnect };
 	}
 
 }
