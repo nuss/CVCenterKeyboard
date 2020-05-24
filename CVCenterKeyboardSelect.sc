@@ -60,8 +60,12 @@ CVCenterKeyboardSelect {
 
 			selectKB = "{ |cv|
 				var nameWdgt = CVCenter.at('%');
-				nameWdgt.value_((nameWdgt.value + cv.value).mod(nameWdgt.items.size));
-			}".format(kbDefName);
+				var keyboardName = '%';
+				var synthDefName = (nameWdgt.value + cv.value).mod(nameWdgt.items.size);
+				nameWdgt.value_(synthDefName);
+				CVCenterKeyboard.all(keyboardName).switchSynthDef(synthDefName);
+				CVCenterKeyboard.all(keyboardName).reInit;
+			}".format(kbDefName, this.keyboardDef.keyboardDefName);
 			CVCenter.use((kbDefName ++ ' next').asSymbol, \increment, tab: tab);
 			CVCenter.use((kbDefName ++ ' prev').asSymbol, \decrement, tab: tab);
 			CVCenter.cvWidgets[(kbDefName ++ ' next').asSymbol].addAction((kbDefName ++ ' next').asSymbol, selectKB);
