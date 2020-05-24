@@ -239,7 +239,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		}
 	}
 
-	createSelect { |extIP, listenerPort, prevSynthCmd, nextSynthCmd, nameCmd, tab|
+	createSelect { |tab|
 		select = CVCenterKeyboardSelect(this, tab);
 		^select.front;
 	}

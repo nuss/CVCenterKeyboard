@@ -2,7 +2,7 @@ CVCenterKeyboardSelect {
 	classvar <allSelects;
 	var <keyboardDef;
 	var <>prevSynthCmd = "/prev", <>nextSynthCmd = "/next", <>nameCmd = "/set_keyboard_name";
-	var <window, <synthList, <tab = \default;
+	var <window, <tab = \default;
 	var kbDefName = \keyboard, dependantFunc;
 
 	*initClass {
@@ -17,6 +17,8 @@ CVCenterKeyboardSelect {
 	}
 
 	init { |tab|
+		var synthList;
+
 		allSelects[keyboardDef] !? {
 			Error("A key board select for the given keyboard definition already exists!").throw;
 		};
@@ -39,7 +41,6 @@ CVCenterKeyboardSelect {
 		}
 	}
 
-	// pass in an existing instance of CVCenterKeyboard
 	front {
 		var pop;
 
@@ -58,28 +59,27 @@ CVCenterKeyboardSelect {
 		CVCenter.cvWidgets[kbDefName] !? {
 			this.removeOSC;
 
-			selectKB = { |cv|
-				CVCenter.at(kbDefName).value_((CVCenter.at(kbDefName).value + cv.value) % synthList.size)
-			};
-			CVCenter.use((kbDefName + 'next kb').asSymbol, \increment, tab: tab);
-			CVCenter.use((kbDefName + 'prev kb').asSymbol, \decrement, tab: tab);
-			// CVCenter.at((kbDefName + 'next kb').asSymbol) !? {
-				CVCenter.cvWidgets[(kbDefName + 'next kb').asSymbol].addAction((kbDefName + 'next kb').asSymbol, selectKB);
-		// };
-			// CVCenter.at((kbDefName + 'prev kb').asSymbol) !? {
-				CVCenter.cvWidgets[(kbDefName + 'prev kb').asSymbol].addAction((kbDefName + 'prev kb').asSymbol, selectKB);
-		// };
+			selectKB = "{ |cv|
+				var nameWdgt = CVCenter.at('%');
+				nameWdgt.value_((nameWdgt.value + cv.value).mod(nameWdgt.items.size));
+			}".format(kbDefName);
+			CVCenter.use((kbDefName ++ ' next').asSymbol, \increment, tab: tab);
+			CVCenter.use((kbDefName ++ ' prev').asSymbol, \decrement, tab: tab);
+			CVCenter.cvWidgets[(kbDefName ++ ' next').asSymbol].addAction((kbDefName ++ ' next').asSymbol, selectKB);
+			CVCenter.cvWidgets[(kbDefName ++ ' prev').asSymbol].addAction((kbDefName ++ ' prev').asSymbol, selectKB);
 
-			CVCenter.cvWidgets[(kbDefName + 'next kb').asSymbol].oscConnect(
+			CVCenter.cvWidgets[(kbDefName ++ ' next').asSymbol].oscConnect(
 				listenerAddr.ip, nil, nextSynthCmd
 			);
-			CVCenter.cvWidgets[(kbDefName + 'prev kb').asSymbol].oscConnect(
+			CVCenter.cvWidgets[(kbDefName ++ ' prev').asSymbol].oscConnect(
 				listenerAddr.ip, nil, prevSynthCmd
 			);
 
-			CVCenter.cvWidgets[kbDefName].addAction('set name', { |cv|
-				listenerAddr.sendMsg(nameCmd, cv.items[cv.value])
-			});
+			CVCenter.cvWidgets[kbDefName].addAction('set name', "{ |cv|
+				var nameCmd = '%';\n
+				var listenerAddr = %;\n
+				listenerAddr.sendMsg(nameCmd, cv.items[cv.value]);
+			}".format(nameCmd, listenerAddr.asCompileString));
 		}
 	}
 
