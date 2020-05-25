@@ -33,6 +33,9 @@ CVCenterKeyboardSelect {
 				CVCenter.use(kbDefName, tab: tab, svItems: synthList ?? {
 					['no stored keyboards found']
 				});
+				CVCenter.addActionAt(kbDefName, 'set keyboard synth', "{ |cv|
+					CVCenterKeyboard.all['%'].postln.switchSynthDef(cv.items[cv.value])
+				}".format(kbDefName));
 				keyboardDef.synthDefNames.addDependant(
 					{ CVCenter.at(kbDefName).items_(keyboardDef.synthDefNames.asArray) };
 				);

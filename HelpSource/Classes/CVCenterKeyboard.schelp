@@ -82,7 +82,7 @@ a link::Classes/Symbol:: or link::Classes/String:: denoting the output bus. Defa
 argument:: includeInCVCenter
 an link::Classes/Array:: of link::Classes/Symbol::s or link::Classes/String::s, denoting those of the afore described arguments which emphasis::should:: appear in CVCenter though they have already been assigned to the keyboard
 argument:: theServer
-optional: the link::Classes/Server:: to rum the link::Classes/Synth:: on
+optional: the link::Classes/Server:: to run the link::Classes/Synth:: on
 argument:: outbus
 optional: an link::Classes/Integer:: denoting a default output bus (can be set in the SynthDef beforehand as well)
 argument:: deactivateDefaultWidgetActions
@@ -189,6 +189,21 @@ SynthDef.new(\square, {
 ~kb.reInit;
 ::
 
+METHOD:: createSelect
+Create a GUI to quickly switch between SynthDef's. The GUI can be connected to external MIDI or OSC controllers. See also link::Classes/CVCenterKeyboardSelect::.
+
+argument:: tab
+Optional - a link::Classes/Symbol:: denoting the tab under which the link::Classes/CVWidgetKnob::s that control the GUI will be placed in link::Classes/CVCenter::. The select which lets you select among theSynthDefs stored with the keyboard will not be part of CVCenter, yet it is connected (and hence synchronized) to a CVWidgetKnob.
+returns:: a link::Classes/CVCenterKeyboardSelect::
+
+DISCUSSION::
+code::
+~kb.createSelect;
+::
+
+METHOD:: select
+returns:: a link::Classes/CVCenterKeyboardSelect:: if one has been created beforehand.
+
 METHOD:: bendSpec
 Set or get the link::Classes/ControlSpec:: for the 'bend' arg within the currently used SynthDef, denoted by the arg code::bendControl:: in link::#-setUpControls::,
 usually controlled through pitch bend wheel on a MIDI keyboard. By default this will be
@@ -210,7 +225,10 @@ optional - a link::Classes/String:: or link::Classes/Symbol::, denoting the Synt
 SynthDef currently stored with the keyboard will be removed
 returns:: a CVCenterKeyboard
 
-SUBSECTION:: Filtering
+METHOD:: freeHangingNodes
+On a CVCenterKeyboard every keystroke generates a new synth node. Sometimes these may hang, meaning they don't stop playing when the finger is lifted from the key. This method frees all currently playing nodes. You may go on playing the keyboard afterwards.
+
+SUBSECTION:: Building a Filter Chain
 
 METHOD:: addOutProxy
 The method creates a link::Classes/NodeProxy:: or optionally an link::Classes/Ndef:: and routes the keyboard's output through it. This means one
@@ -312,7 +330,7 @@ returns:: a link::Classes/Symbol::, denoting the SynthDef currently used with th
 METHOD:: synthDefNames
 returns:: an link::Classes/Array:: of link::Classes/Symbol::s, denoting all SynthDefs that have been added to the CVCenterKeyboard instance
 
-METHOD:: keyboardName
+METHOD:: keyboardDefName
 returns:: a link::Classes/Symbol:: representing the name of the CVCenterKeyboard. The name serves as key in code::CVCenterkeyboard.all::
 
 METHOD:: server
