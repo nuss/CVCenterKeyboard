@@ -155,7 +155,7 @@ returns:: a CVCenterKeyboard
 METHOD:: reInit
 It may happen that the physical keyboard doesn't respond, e.g. after loading a link::Classes/CVCenter#*loadSetup#CVCenter setup::.
 This short command will recreate the keyboard internally without any further user interaction. Optionally the name of the SynthDef for
-which the keyboard shall recreated may be given.
+which the keyboard shall be recreated may be given.
 argument:: synthDefName
 optional - a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: you want to reinitialize.
 returns:: a CVCenterKeyboard
