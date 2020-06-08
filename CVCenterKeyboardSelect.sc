@@ -19,7 +19,7 @@ CVCenterKeyboardSelect {
 		var synthList;
 
 		allSelects[keyboardDef] !? {
-			Error("A key board select for the given keyboard definition already exists!").throw;
+			Error("A keyboard select for the given keyboard definition already exists!").throw;
 		};
 
 		if (keyboardDef.isNil) {
@@ -46,7 +46,7 @@ CVCenterKeyboardSelect {
 	front {
 		var pop;
 
-		window ?? {
+		if (window.isNil or: { window.isClosed }) {
 			window = Window(kbDefName, Rect(0, 0, 350, 100));
 			pop = PopUpMenu(window, window.view.bounds.insetBy(30));
 			CVCenter.at(kbDefName).connect(pop);
@@ -91,8 +91,8 @@ CVCenterKeyboardSelect {
 
 	removeOSC {
 		var wdgt = CVCenter.cvWidgets[kbDefName];
-		var up = CVCenter.cvWidgets[kbDefName ++ ' next'];
-		var down = CVCenter.cvWidgets[kbDefName ++ ' prev'];
+		var up = CVCenter.cvWidgets[(kbDefName ++ ' next').asSymbol];
+		var down = CVCenter.cvWidgets[(kbDefName ++ ' prev').asSymbol];
 
 		wdgt !? {
 			if (wdgt.wdgtActions.notNil and:{ wdgt.wdgtActions['set name'].notNil }) {
