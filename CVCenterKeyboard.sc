@@ -215,6 +215,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		synthDefName = synthDefName.asSymbol;
 		currentSynthDef = synthDefName;
 		this.free;
+		this.freeHangingNodes; // just in case...
 		CVCenter.scv.put(keyboardDefName, ());
 		CVCenter.scv[keyboardDefName].put(synthDefName, nil!128);
 		this.prInitKeyboard(synthDefName);

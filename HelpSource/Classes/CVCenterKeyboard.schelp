@@ -1,7 +1,7 @@
 TITLE:: CVCenterKeyboard
 summary:: A MIDI keyboard implementation for CVCenter
 categories:: Conductor>CVCenter, External Control>MIDI
-related:: Classes/CVCenter, Guides/UsingMIDI
+related:: Classes/CVCenter, Guides/UsingMIDI, Classes/CVCenterKeyboardSelect
 
 DESCRIPTION::
 A CVCenterKeyboard consists of a collection of SynthDefs and provides a convenient way to play them on a MIDI keyboard.
@@ -185,6 +185,8 @@ SynthDef.new(\square, {
 }).add;
 )
 
+Spec.add(\width, #[0.01, 0.99]);
+
 ~kb.addSynthDef(\square);
 ~kb.setUpControls(\square, \sq, bendControl: \freq);
 // switch keyboard to new SynthDef
@@ -205,7 +207,7 @@ returns:: a link::Classes/CVCenterKeyboardSelect::
 
 DISCUSSION::
 code::
-~kb.createSelect;
+~kbSelect = ~kb.createSelect;
 ::
 
 METHOD:: select
