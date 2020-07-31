@@ -1,6 +1,6 @@
 CVCenterKeyboardSelect {
 	classvar <allSelects;
-	var <keyboardDef;
+	var <keyboardDef, <>touchOSC, <>touchOSCPanel;
 	var <window, <tab = \default;
 	var kbDefName = \keyboard, dependantFunc;
 
@@ -11,8 +11,8 @@ CVCenterKeyboardSelect {
 		Spec.add(\decrement, #[0, -1, \lin, 1.0, 0]);
 	}
 
-	*new { |keyboardDef, tab = \default|
-		^super.newCopyArgs(keyboardDef).init(tab);
+	*new { |keyboardDef, tab = \default, touchOSC, touchOSCPanel = 1|
+		^super.newCopyArgs(keyboardDef, touchOSC, touchOSCPanel).init(tab);
 	}
 
 	init { |tab|
@@ -55,11 +55,15 @@ CVCenterKeyboardSelect {
 		window.front
 	}
 
-	addOSC { |extIP = "192.168.1.2", listenerPort = "9000", prevSynthCmd = "/prev_kb", nextSynthCmd = "/next_kb", nameCmd = "/set_kb_name", prefix = 1|
+	addOSC { |listenerAddr, prevSynthCmd = "/prev_kb", nextSynthCmd = "/next_kb", nameCmd = "/select_kb_name", prefix = 1|
 		var selectKB;
-		var listenerAddr = NetAddr(extIP, listenerPort);
+
+		if (listenerAddr.notNil and: { listenerAddr.class === NetAddr }) {
+			this.touchOSC = listenerAddr;
+		};
 
 		if (prefix.notNil) {
+			this.touchOSCPanel = prefix;
 			prefix = "/" ++ prefix;
 		} {
 			prefix = "";
@@ -71,10 +75,13 @@ CVCenterKeyboardSelect {
 			selectKB = "{ |cv|
 				var nameWdgt = CVCenter.at('%');
 				var keyboardName = '%';
-				var synthDefName = (nameWdgt.value + cv.value).mod(nameWdgt.items.size);
-				nameWdgt.value_(synthDefName);
-				CVCenterKeyboard.all[keyboardName].switchSynthDef(synthDefName);
-				CVCenterKeyboard.all[keyboardName].reInit;
+				var synthDefIndex = (nameWdgt.value + cv.value).mod(nameWdgt.items.size);
+				synthDefIndex !? {
+					nameWdgt.value_(synthDefIndex);
+					nameWdgt.item.postln;
+					CVCenterKeyboard.all[keyboardName].switchSynthDef(nameWdgt.items[synthDefIndex]);
+					CVCenterKeyboard.all[keyboardName].reInit;
+				}
 			}".format(kbDefName, this.keyboardDef.keyboardDefName);
 			CVCenter.use((kbDefName ++ ' next').asSymbol, \increment, tab: tab);
 			CVCenter.use((kbDefName ++ ' prev').asSymbol, \decrement, tab: tab);
@@ -89,20 +96,19 @@ CVCenterKeyboardSelect {
 			CVCenter.cvWidgets[(kbDefName ++ ' prev').asSymbol].addAction((kbDefName ++ ' prev').asSymbol, selectKB);
 
 			CVCenter.cvWidgets[(kbDefName ++ ' next').asSymbol].oscConnect(
-				listenerAddr.ip, nil, prefix ++ nextSynthCmd
-			);
+				this.touchOSC.ip, nil, prefix ++ nextSynthCmd
+			).setOscInputConstraints(Point(0, 1));
 			CVCenter.cvWidgets[(kbDefName ++ ' prev').asSymbol].oscConnect(
-				listenerAddr.ip, nil, prefix ++ prevSynthCmd
-			);
+				this.touchOSC.ip, nil, prefix ++ prevSynthCmd
+			).setOscInputConstraints(Point(0, 1));
 			CVCenter.cvWidgets[(kbDefName ++ ' free').asSymbol].oscConnect(
-				listenerAddr.ip, nil, prefix ++ "/kb_free_hanging_nodes"
-			);
+				this.touchOSC.ip, nil, prefix ++ "/kb_free_hanging_nodes"
+			).setOscInputConstraints(Point(0, 1));
 
 			CVCenter.cvWidgets[kbDefName].addAction('set name', "{ |cv|
-				var nameCmd = '%';\n
-				var listenerAddr = %;\n
-				listenerAddr.sendMsg(%nameCmd, cv.items[cv.value]);
-			}".format(nameCmd, listenerAddr.asCompileString, prefix));
+				(\"set keyboard name: \" + cv.items[cv.value]).postln;
+				CVCenterKeyboardSelect.allSelects['%'].touchOSC.sendMsg(\"%%\", cv.items[cv.value]);
+			}".format(kbDefName, prefix, nameCmd));
 		}
 	}
 

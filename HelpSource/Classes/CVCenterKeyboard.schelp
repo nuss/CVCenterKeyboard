@@ -208,6 +208,11 @@ returns:: a link::Classes/CVCenterKeyboardSelect::
 DISCUSSION::
 code::
 ~kbSelect = ~kb.createSelect;
+
+// define a TouchOSC interface, connected to your keyboard select
+// find an example layout in the 'TouchOSC' directory within the class' repository
+// adjust IP address to your device" IP address, prefix to the page that contains your interface
+~kbSelect.addOSC(NetAddr("192.168.1.16", 9000));
 ::
 
 METHOD:: select

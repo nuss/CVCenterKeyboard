@@ -47,11 +47,8 @@ A select in TouchOSC could look e.g. like the following screenshot: image::touch
 
 By calling code::addOSC:: on the CVCenterKeyboardSelect instance the following happens: Two more CVWidgetKnobs will be added to CVCenter. Both cause the select to step through its items, one descending, the other one ascending. Any time a switch to a new SynthDef happens the SynthDef's name is send to the controller, setting the label.
 
-ARGUMENT:: extIP
-The IP address of the external controller
-
-ARGUMENT:: listenerPort
-The port on which the external controller will emphasis::listen::.
+ARGUMENT:: listenerAddr
+A link::Classes/NetAddr::, reflecting the IP address and emphasis::listening:: port of the device on which TouchOSC is installed.
 
 ARGUMENT:: prevSynthCmd
 The OSC command name for the descending select button (labeled with a left arrow in the screenshot). E.g. code::'/previous_synth'::.
@@ -62,6 +59,9 @@ The OSC command name for the ascending select button (labeled with a right arrow
 
 ARGUMENT:: nameCmd
 The OSC command name under which the external controller will respond to the SynthDef names sent from SC.
+
+ARGUMENT:: prefix
+TouchOSC interfaces can be organized in an arbitrary number of panels (called "pages"). The prefix reflects the panel or page on which the controlling elements are drawn. The prefix will be part of the OSC command names sent to and received from TouchOSC, e.g. code::"/1/next_kb"::. By default the prefix will be set to code::1::. If set to code::nil:: the prefix will be omitted in the OSC command names, e.g. code::"/next_kb"::.
 
 METHOD:: removeOSC
 Removes all OSC listeners. Add new ones by calling link::#-addOSC:: again.
