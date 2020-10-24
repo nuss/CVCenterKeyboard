@@ -296,9 +296,9 @@ returns:: a link::Classes/NodeProxy:: or an link::Classes/Ndef:: or code::nil:: 
 METHOD:: mapBus
 Take an audio bus and map it some control within the playing keyboard Synths.
 argument:: ctrlname
-a control within one or more SynthDefs used within the keyboard.
+a control within one or more SynthDefs used within the keyboard, to be given as link::Classes/String:: or link::Classes/Symbol::.
 argument: bus
-a link::Classes/Bus:: controlling the control denoted by the code::ctrlname:: argument
+a link::Classes/Bus:: setting the control denoted by the code::ctrlname:: argument
 
 METHOD:: mappedBusses
 Returns an link::Classes/Event:: holding representations of all Busses under their given control name. A bus representation holds an array of link::Classes/Bus#-subBus#subBusses:: link::Classes/Bus#-asMap#converted to mapping symbols:::
@@ -309,6 +309,8 @@ The mapping symbols will be used whenever a new Synth is instantiated while play
 
 METHOD:: unmapBus
 Set the bus at the given control name to code::nil:: and hence remove the bus.
+argument:: ctrlname
+a link::Classes/String:: or link::Classes/Symbol::, denoting the bus to be removed.
 
 SUBSECTION:: Recording sequences
 
