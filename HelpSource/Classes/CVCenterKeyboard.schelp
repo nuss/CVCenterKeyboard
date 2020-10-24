@@ -293,6 +293,23 @@ returns:: a CVCenterKeyboard
 METHOD:: outProxy
 returns:: a link::Classes/NodeProxy:: or an link::Classes/Ndef:: or code::nil:: if not output proxy exists
 
+METHOD:: mapBus
+Take an audio bus and map it some control within the playing keyboard Synths.
+argument:: ctrlname
+a control within one or more SynthDefs used within the keyboard.
+argument: bus
+a link::Classes/Bus:: controlling the control denoted by the code::ctrlname:: argument
+
+METHOD:: mappedBusses
+Returns an link::Classes/Event:: holding representations of all Busses under their given control name. A bus representation holds an array of link::Classes/Bus#-subBus#subBusses:: link::Classes/Bus#-asMap#converted to mapping symbols:::
+
+code::numBusses.collect{ |i| bus.subBus(i).asMap }::
+
+The mapping symbols will be used whenever a new Synth is instantiated while playing the keyboard. By separating the (possibly multichannel) bus into sub busses it should be guaranteed that when mapped to a multichannel control each channel will be controlled by one sub bus.
+
+METHOD:: unmapBus
+Set the bus at the given control name to code::nil:: and hence remove the bus.
+
 SUBSECTION:: Recording sequences
 
 METHOD:: activateSampling

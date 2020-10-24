@@ -7,6 +7,7 @@ CVCenterKeyboard {
 	var on, off, bend, namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <select;
 	var <>debug = false;
+	var <mappedBusses;
 
 	*initClass {
 		StartUp.add {
@@ -23,6 +24,7 @@ CVCenterKeyboard {
 		all[keyboardDefName] ?? { all.put(keyboardDefName, this) };
 		#on, off, bend = ()!3;
 		synthDefNames ?? { synthDefNames = List() };
+		mappedBusses ? mappedBusses = ();
 	}
 
 	addSynthDef { |synthDefName, connectMidi = false|
@@ -290,7 +292,18 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			];
 			// sort out keyboard-controlled args, they should only get set once.
 			// this may happen if an existing CVCenter setup gets loaded after 'setUpControls'
-			var pairs = namesCVs.clump(2).select { |pair| kbArgs.includes(pair[0]).not }.flatten(1);
+
+			// look up mappedBusses for Ndef to be placed instead of value
+			// to be tested...
+			var pairs = namesCVs.clump(2).select {
+				|pair| kbArgs.includes(pair[0]).not
+			}.collect { |pair|
+				if (mappedBusses[pair[0]].notNil) {
+					[pair[0], mappedBusses[pair[0]]]
+				} {
+					[pair[0], pair[1]]
+				}
+			}.flatten(1);
 			var argsValues = kbArgs ++ pairs.deepCollect(2, _.value);
 			// "kbArgs: %\n\npairs: %\n\nargsValues: %\n".postf(kbArgs, pairs, argsValues);
 			if (this.debug) { "on['%']['%'][num: %]: %\n\nchan: %, src: %\n".postf(keyboardDefName, synthDefName, num, argsValues, chan, src) };
@@ -476,5 +489,18 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 
 	freeHangingNodes {
 		group.deepFree;
+	}
+
+	// control bus mapping
+	mapBus { |ctrlname, bus|
+		var numBusses = bus.numChannels;
+		ctrlname ?? {
+			Error("A control name must be given as first argument in 'mapNdef'!").throw;
+		};
+		mappedBusses.put(ctrlname.asSymbol, numBusses.collect { |i| bus.subBus(i).asMap });
+	}
+
+	unmapBus { |ctrlname|
+		mappedBusses(ctrlname.asSymbol) = nil;
 	}
 }
