@@ -501,6 +501,6 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 	}
 
 	unmapBus { |ctrlname|
-		mappedBusses(ctrlname.asSymbol) = nil;
+		mappedBusses[ctrlname.asSymbol] = nil;
 	}
 }
