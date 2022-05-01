@@ -255,8 +255,12 @@ argument:: numChannels
 an link::Classes/Integer::, denoting the number of output channels
 argument:: useNdef
 if set to code::true:: the resulting proxy will be an Ndef rather than a NodeProxy
+argument:: transbus
+if set, the output of the current keyboard Synth will be sent to this bus and filters within the subsequent filter chain (the link::#-outProxy::) will read their input from this bus. This should avoid that any other sound being played on the bus are effected by the filter chain.
 argument:: outbus
 the output bus to which the proxy should play. If omitted the out bus of the SynthDef is assumed
+argument:: play
+a link::Classes/Boolean:: denoting whether link::#-outProxy:: should be playing immediatley. Default: code::true::
 returns:: a CVCenterKeyboard
 
 DISCUSSION::
@@ -291,13 +295,13 @@ the output bus to which the keyboard should play. If none is given code::0:: is 
 returns:: a CVCenterKeyboard
 
 METHOD:: outProxy
-returns:: a link::Classes/NodeProxy:: or an link::Classes/Ndef:: or code::nil:: if not output proxy exists
+returns:: a link::Classes/NodeProxy:: or an link::Classes/Ndef:: or code::nil:: if no output proxy exists
 
 METHOD:: mapBus
-Take an audio bus and map it some control within the playing keyboard Synths.
+Take an audio bus and map it to some control within the playing keyboard Synths.
 argument:: ctrlname
 a control within one or more SynthDefs used within the keyboard, to be given as link::Classes/String:: or link::Classes/Symbol::.
-argument: bus
+argument:: bus
 a link::Classes/Bus:: setting the control denoted by the code::ctrlname:: argument
 
 METHOD:: mappedBusses

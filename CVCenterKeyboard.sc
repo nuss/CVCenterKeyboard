@@ -367,7 +367,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		});
 	}
 
-	addOutProxy { |synthDefName, numChannels=2, useNdef=false, outbus, play=true|
+	addOutProxy { |synthDefName, numChannels=2, useNdef=false, transbus, outbus, play=true|
 		var proxyName;
 		if (synthDefName.notNil) {
 			synthDefName = synthDefName.asSymbol;
@@ -381,13 +381,17 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			Ndef(proxyName).mold(numChannels, \audio, \elastic);
 			outProxy = Ndef(proxyName);
 		};
+		outbus ?? {
+			outbus = this.out
+		};
+		transbus !? {
+			this.out_(transbus)
+		};
 		outProxy.source = {
-			// In.ar(synthParams[synthDefName].out, numChannels)
 			In.ar(this.out, numChannels)
 		};
-		"out: %\n".postf(out);
 		if (play) {
-			outProxy.play(outbus ? this.out);
+			outProxy.play(outbus);
 		}
 	}
 
