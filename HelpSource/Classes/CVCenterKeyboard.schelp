@@ -46,7 +46,7 @@ METHOD:: all
 returns:: an link::Classes/Event::, containing all instantiated Keyboards
 
 METHOD:: new
-Instanciate a new keyboard under code::keyboardName::. The keyboard will be accessible under code::CVCenterKeyboard.all[name]::
+Instanciate a new keyboard under code::keyboardName::. The keyboard will be accessible under code::CVCenterKeyboard.all[keyboardName]::
 argument:: keyboardName
 a link::Classes/String:: or link::Classes/Symbol::, denoting the name of the new keyboard
 returns:: a CVCenterKeyboard
@@ -56,7 +56,7 @@ argument:: synthDefName
 a link::Classes/Symbol:: or link::Classes/String::, identifying an already declared link::Classes/SynthDef:: to be used with the new CVCenterKeyboard instance.
 The SynthDef must have defined an envelop and a code::\gate:: argument.
 argument:: keyboardName
-a link::Classes/Symbol:: or link::Classes/String::, identifying the CVCenterKeyboard. The keyboard will be accessible at this key within the code::CVCenter.all:: variable.
+a link::Classes/Symbol:: or link::Classes/String::, identifying the CVCenterKeyboard. The keyboard will be accessible at this key within the code::CVCenterKeyboard.all:: variable.
 argument:: connectMidi
 if set to code::true:: immediately connect the external MIDI keyboard (default: code::true::)
 returns:: a CVCenterKeyboard
