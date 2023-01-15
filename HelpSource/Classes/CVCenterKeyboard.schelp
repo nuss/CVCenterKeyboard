@@ -177,15 +177,20 @@ code::
 // Create a new SynthDef
 (
 SynthDef.new(\square, {
-	var sig, env;
+	var sig, env, arr;
 	env = EnvGen.kr(Env.adsr(\atk.kr(0.03), \dec.kr(0.5), \sust.kr(0.5), \rel.kr(0.7)), \gate.kr(1), doneAction: Done.freeSelf);
-	sig = Pulse.ar(\freq.kr(220), \width.kr(0.5));
+	arr = [1, LFTri.kr(LFNoise0.kr(\noise.kr(0.02 ! 2)))];
+	sig = Pulse.ar(
+		\freq.kr(220),
+		SelectX.kr(\which.kr(0!2) * arr.size, arr) * \width.kr(0.5 ! 2)
+	);
 	sig = sig!2 * env;
 	Out.ar(\out.kr(0), sig * \veloc.kr(1) * \amp.kr(0.5));
 }).add;
 )
 
 Spec.add(\width, #[0.01, 0.99]);
+Spec.add(\noise, #[0.002, 4000]);
 
 ~kb.addSynthDef(\square);
 ~kb.setUpControls(\square, \sq, bendControl: \freq);

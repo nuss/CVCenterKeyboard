@@ -31,6 +31,15 @@ CVCenterKeyboard {
 		this.prInitSynthDef(synthDefName.asSymbol, connectMidi);
 	}
 
+	removeSynthDef { |synthDefName|
+		synthDefNames !? {
+			synthDefNames[synthDefName.asSymbol] !? {
+				synthDefNames.remove(synthDefName).changed(\value);
+				CVCenter.scv[keyboardDefName].removeAt(synthDefName);
+			}
+		}
+	}
+
 	*at { |keyboardDefName|
 		^all[keyboardDefName]
 	}
