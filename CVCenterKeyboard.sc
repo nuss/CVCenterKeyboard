@@ -480,6 +480,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 				pdef.add(Ndef(name));
 				pdef.last.play(group: sampleGroup);
 				#sampleStart, sampleEnd = nil!2;
+				cSample = cSample + 1;
 				"\nsampling keyboard events finished, should start playing now\n".inform;
 			} {
 				"\nnothing recorded, please try again\n".inform;
@@ -504,9 +505,15 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 
 	clearSamples { |...indices|
 		if (indices.isEmpty) {
-			pdef.do { |p| p.source.clear }
+			pdef.do { |p, i|
+				p.source.clear;
+				pdef.remove(p);
+			}
 		} {
-			indices.do { |i| pdef[i].source.clear };
+			indices.do { |i|
+				pdef[i].source.clear;
+				pdef.removeAt(i);
+			};
 		}
 	}
 
