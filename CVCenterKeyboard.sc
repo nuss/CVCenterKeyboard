@@ -3,7 +3,8 @@ CVCenterKeyboard {
 	var <keyboardDefName, <synthDefNames, synthParams;
 	var <>bendSpec, <>out, <server, group;
 	var <currentSynthDef, <wdgtNames, <outProxy;
-	var sampling = false, sampleEvents, <pdef;
+	var sampling = false, sampleEvents, <pdef, cSample = 1;
+	var <sampleGroup;
 	var on, off, bend, namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <select;
 	var <>debug = false;
@@ -430,7 +431,12 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 
 	// start/stop sampling
 	activateSampling { |onOff = true, synthDefName|
-		var pbinds, items, pbproxy, last;
+		var pbinds, items, pbproxy, name, last;
+
+		sampleGroup ?? {
+			sampleGroup = ParGroup.new;
+		};
+
 		if (synthDefName.notNil) {
 			synthDefName = synthDefName.asSymbol;
 		} {
@@ -439,7 +445,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		sampling = onOff;
 		if (sampling == false) {
 			sampleEnd = Main.elapsedTime;
-			pdef ?? { pdef = [] };
+			pdef ?? { pdef = List[] };
 			sampleEvents.do { |e, num|
 				// add last event - not considered within noteOn, notOff
 				e.dur !? {
@@ -467,8 +473,12 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			}.takeThese(_.isNil);
 			if (pbinds.isEmpty.not) {
 				// pbinds.do { |pb| pb.patternpairs.postln };
-				pdef = pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
-				pdef.last.play;
+				// pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
+				name = (synthDefName ++ "-" ++ cSample).asSymbol;
+				Ndef(name).mold(2, \audio, \elastic);
+				Ndef(name).source = Pdef(name, Ppar(pbinds, inf));
+				pdef.add(Ndef(name));
+				pdef.last.play(group: sampleGroup);
 				#sampleStart, sampleEnd = nil!2;
 				"\nsampling keyboard events finished, should start playing now\n".inform;
 			} {
@@ -494,9 +504,9 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 
 	clearSamples { |...indices|
 		if (indices.isEmpty) {
-			pdef.do { |p| p.clear }
+			pdef.do { |p| p.source.clear }
 		} {
-			indices.do { |i| pdef[i].clear };
+			indices.do { |i| pdef[i].source.clear };
 		}
 	}
 
