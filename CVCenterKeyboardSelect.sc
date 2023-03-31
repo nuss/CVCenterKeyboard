@@ -30,7 +30,7 @@ CVCenterKeyboardSelect {
 				} {
 					allSelects.put(kbDefName, this);
 					synthList = keyboardDef.synthDefNames.asArray;
-					CVCenter.use(kbDefName, tab: tab, svItems: synthList ?? {
+					/*CVCenter.use(kbDefName, tab: tab, svItems: synthList ?? {
 						['no stored keyboards found']
 					});
 					CVCenter.addActionAt(kbDefName, 'set keyboard synth', "{ |cv|
@@ -38,7 +38,7 @@ CVCenterKeyboardSelect {
 					}".format(kbDefName));
 					keyboardDef.synthDefNames.addDependant(
 						{ CVCenter.at(kbDefName).items_(keyboardDef.synthDefNames.asArray) };
-					);
+					);*/
 				}
 			}
 		}
@@ -50,7 +50,7 @@ CVCenterKeyboardSelect {
 		if (window.isNil or: { window.isClosed }) {
 			window = Window(kbDefName, Rect(0, 0, 350, 100));
 			pop = PopUpMenu(window, window.view.bounds.insetBy(30));
-			CVCenter.at(kbDefName).connect(pop);
+			// CVCenter.at(kbDefName).connect(pop);
 		};
 		window.front
 	}
