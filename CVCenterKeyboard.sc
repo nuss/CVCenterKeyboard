@@ -1,14 +1,17 @@
 CVCenterKeyboard {
 	classvar <all;
 	var <keyboardDefName, <synthDefNames, synthParams;
-	var <>bendSpec, <>out, <server, group;
+	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, <wdgtNames, <outProxy;
 	var sampling = false, sampleEvents, <pdef, cSample = 1;
-	var <sampleGroup;
+	var <sampleGroups;
 	var on, off, bend, namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <select;
 	var <>debug = false;
 	var <mappedBusses;
+	// sequencer support;
+	var <pairs; // pairs of controls / CVs
+	var <valuePairs; // pairs of args / cv.values
 
 	*initClass {
 		StartUp.add {
@@ -202,21 +205,21 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 				if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
 					#[lo, hi].do { |slot|
 						var setString;
-						if (slot == \lo) {
+						if (slot === \lo) {
 							setString = "[cv.value, CVCenter.at('%').hi]".format(wdgtName);
 						} {
 							setString = "[CVCenter.at('%').lo, cv.value]".format(wdgtName);
 						};
 						CVCenter.addActionAt(
 							wdgtName, 'keyboard set arg',
-							"{ |cv| CVCenter.scv['%']['%'].do { |synth| synth !? { synth.set('%', %) }}; }"
-							.format(keyboardDefName, synthDefName, argName, setString), slot);
+							"{ |cv| CVCenterKeyboard.all['%'].group.set('%', %) }"
+							.format(keyboardDefName, argName, setString), slot);
 						CVCenter.activateActionAt(wdgtName, \default, deactivateDefaultActions.not, slot);
 					}
 				} {
 					CVCenter.addActionAt(wdgtName, 'keyboard set arg',
-						"{ |cv| CVCenter.scv['%']['%'].do { |synth| synth !? { synth.set('%', cv.value) }}; }"
-						.format(keyboardDefName, synthDefName, argName));
+						"{ |cv| CVCenterKeyboard.all['%'].group.set('%', cv.value) }"
+						.format(keyboardDefName, argName));
 					CVCenter.activateActionAt(wdgtName, \default, deactivateDefaultActions.not);
 				}
 			}
@@ -290,6 +293,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			group = ParGroup.new;
 		};
 		on[keyboardDefName] = MIDIFunc.noteOn({ |veloc, num, chan, src|
+			var argsValues;
 			var kbArgs = [
 				synthParams[synthDefName].pitchControl,
 				num.midicps,
@@ -305,7 +309,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 
 			// look up mappedBusses for Ndef to be placed instead of value
 			// to be tested...
-			var pairs = namesCVs.clump(2).select {
+			pairs = namesCVs.clump(2).select {
 				|pair| kbArgs.includes(pair[0]).not
 			}.collect { |pair|
 				if (mappedBusses[pair[0]].notNil) {
@@ -314,8 +318,8 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 					[pair[0], pair[1]]
 				}
 			}.flatten(1);
-			var argsValues = kbArgs ++ pairs.deepCollect(2, _.value);
-			// "kbArgs: %\n\npairs: %\n\nargsValues: %\n".postf(kbArgs, pairs, argsValues);
+			valuePairs = pairs.deepCollect(2, _.value);
+			argsValues = kbArgs ++ valuePairs;
 			if (this.debug) { "on['%']['%'][num: %]: %\n\nchan: %, src: %\n".postf(keyboardDefName, synthDefName, num, argsValues, chan, src) };
 			if (synthParams[synthDefName].srcID.isNil or: {
 				synthParams[synthDefName].srcID.notNil and: {
@@ -332,7 +336,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 					};
 					if (v.size > 1) {
 						// multichannel-expand arrayed args properly
-						sampleEvents[num][k] = sampleEvents[num][k].add([(v)]);
+						sampleEvents[num][k] = sampleEvents[num][k].add([v]);
 					} {
 						sampleEvents[num][k] = sampleEvents[num][k].add(v);
 					};
@@ -432,9 +436,12 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 	// start/stop sampling
 	activateSampling { |onOff = true, synthDefName|
 		var pbinds, items, pbproxy, name, last;
+		var sampleGroup;
 
-		sampleGroup ?? {
+		if (onOff.not) {
+			sampleGroups ?? { sampleGroups = List[] };
 			sampleGroup = ParGroup.new;
+			sampleGroups.add(sampleGroup)
 		};
 
 		if (synthDefName.notNil) {
@@ -459,8 +466,9 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 				}
 			};
 			pbinds = sampleEvents.collect { |slot, num|
+				// slot.pairsDo { |k, v| [k, v].postln };
 				if (slot.isEmpty.not) {
-					items = [\instrument, synthDefName, synthParams[synthDefName].pitchControl, num.midicps]
+					items = [\instrument, synthDefName, \group, sampleGroup, synthParams[synthDefName].pitchControl, num.midicps]
 					++ slot.collect(Pseq(_, inf)).asPairs;
 					/*++ slot.collect { |v, k|
 						if (CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).notNil) {
