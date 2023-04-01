@@ -1,11 +1,11 @@
 CVCenterKeyboard {
 	classvar <all;
-	var <keyboardDefName, <synthDefNames, synthParams;
+	var <keyboardDefName, <synthDefNames, <synthParams;
 	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, <wdgtNames, <outProxy;
-	var sampling = false, sampleEvents, <pdef, cSample = 1;
+	var <sampler, sampling = false, sampleEvents, <pdef, cSample = 1;
 	var <sampleGroups;
-	var on, off, bend, namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
+	var <on, <off, bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <select;
 	var <>debug = false;
 	var <mappedBusses;
@@ -26,7 +26,8 @@ CVCenterKeyboard {
 
 	init {
 		all[keyboardDefName] ?? { all.put(keyboardDefName, this) };
-		#on, off, bend = ()!3;
+		// #on, off, bend = ()!3;
+		group ?? { ParGroup.new };
 		synthDefNames ?? { synthDefNames = List() };
 		mappedBusses ? mappedBusses = ();
 	}
@@ -292,7 +293,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		group ?? {
 			group = ParGroup.new;
 		};
-		on[keyboardDefName] = MIDIFunc.noteOn({ |veloc, num, chan, src|
+		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			var argsValues;
 			var kbArgs = [
 				synthParams[synthDefName].pitchControl,
@@ -348,7 +349,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			}
 		});
 
-		off[keyboardDefName] = MIDIFunc.noteOff({ |veloc, num, chan, src|
+		off = MIDIFunc.noteOff({ |veloc, num, chan, src|
 			if (this.debug) { "off['%']['%'][num: %]\n\n".postf(keyboardDefName, synthDefName, num) };
 			if (synthParams[synthDefName].srcID.isNil or: {
 				synthParams[synthDefName].srcID.notNil and: {
@@ -367,7 +368,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			}
 		});
 
-		bend[keyboardDefName] = MIDIFunc.bend({ |bendVal, chan, src|
+		bend = MIDIFunc.bend({ |bendVal, chan, src|
 			if (this.debug) { "bend['%']['%']: %\n".postf(keyboardDefName, synthDefName, bendVal) };
 			if (synthParams[synthDefName].srcID.isNil or: {
 				synthParams[synthDefName].srcID.notNil and: {
@@ -433,15 +434,23 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		CVCenter.scv.removeAt(keyboardDefName);
 	}
 
+	// add the sequencer, fed through sampling keyboard strokes
+	addSampler { |group|
+		if (sampler.isNil) {
+			sampler = CVCenterKeyboardSampler(keyboardDefName);
+		} {
+			"The given keyboard '%' has already an assigned sampler.".format(keyboardDefName).error;
+		}
+	}
+
 	// start/stop sampling
 	activateSampling { |onOff = true, synthDefName|
 		var pbinds, items, pbproxy, name, last;
-		var sampleGroup;
 
 		if (onOff.not) {
 			sampleGroups ?? { sampleGroups = List[] };
-			sampleGroup = ParGroup.new;
-			sampleGroups.add(sampleGroup)
+			sampleGroups.add(group);
+			// TODO: create new group. Old group, however must remain untouched in sampleGroups
 		};
 
 		if (synthDefName.notNil) {
@@ -468,7 +477,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			pbinds = sampleEvents.collect { |slot, num|
 				// slot.pairsDo { |k, v| [k, v].postln };
 				if (slot.isEmpty.not) {
-					items = [\instrument, synthDefName, \group, sampleGroup, synthParams[synthDefName].pitchControl, num.midicps]
+					items = [\instrument, synthDefName, \group, group, synthParams[synthDefName].pitchControl, num.midicps]
 					++ slot.collect(Pseq(_, inf)).asPairs;
 					/*++ slot.collect { |v, k|
 						if (CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).notNil) {
@@ -486,7 +495,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 				Ndef(name).mold(2, \audio, \elastic);
 				Ndef(name).source = Pdef(name, Ppar(pbinds, inf));
 				pdef.add(Ndef(name));
-				pdef.last.play(group: sampleGroup);
+				pdef.last.play(group: group);
 				#sampleStart, sampleEnd = nil!2;
 				cSample = cSample + 1;
 				"\nsampling keyboard events finished, should start playing now\n".inform;
