@@ -201,7 +201,8 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		this.prInitCVs(synthDefName, args);
 
 		args.do { |argName, i|
-			wdgtName = wdgtNames[i];
+			wdgtName = namesCVs[synthDefName][i * 3];
+
 			CVCenter.cvWidgets[wdgtName] !? {
 				if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
 					#[lo, hi].do { |slot|
@@ -265,7 +266,9 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 	prInitCVs { |synthDefName, args|
 		var nameString, wdgtName;
 
-		#wdgtNames, namesCVs = []!2;
+		// wdgtNames ?? { wdgtNames = () };
+		namesCVs ?? { namesCVs = () };
+		namesCVs.put(synthDefName, List[]);
 
 		args.do { |argName|
 			nameString = argName.asString;
@@ -274,17 +277,16 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			};
 			wdgtName = (synthParams[synthDefName].prefix ++ nameString).asSymbol;
 			CVCenter.cvWidgets[wdgtName] !? {
-				if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
-					if (namesCVs.includes(argName).not) {
-						namesCVs = namesCVs.add(argName).add(CVCenter.at(wdgtName).asArray);
-					}
-				} {
-					if (namesCVs.includes(argName).not) {
-						namesCVs = namesCVs.add(argName).add(CVCenter.at(wdgtName));
+				if (namesCVs[synthDefName].includes(argName).not) {
+					namesCVs[synthDefName].add(wdgtName);
+					if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
+						namesCVs[synthDefName].add(argName).add(CVCenter.at(wdgtName).asArray);
+					} {
+						namesCVs[synthDefName].add(argName).add(CVCenter.at(wdgtName));
 					}
 				}
 			};
-			wdgtNames = wdgtNames.add(wdgtName);
+			// wdgtNames[synthDefName] = wdgtNames[synthDefName].add(wdgtName);
 		};
 	}
 
@@ -294,7 +296,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			group = ParGroup.new;
 		};
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
-			var argsValues;
+			var argsValues, wdgtsExcluded;
 			var kbArgs = [
 				synthParams[synthDefName].pitchControl,
 				num.midicps,
@@ -310,7 +312,8 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 
 			// look up mappedBusses for Ndef to be placed instead of value
 			// to be tested...
-			pairs = namesCVs.clump(2).select {
+			wdgtsExcluded = namesCVs[synthDefName].select { |it, i| i % 3 > 0 };
+			pairs = wdgtsExcluded.clump(2).select {
 				|pair| kbArgs.includes(pair[0]).not
 			}.collect { |pair|
 				if (mappedBusses[pair[0]].notNil) {

@@ -5,7 +5,7 @@ CVCenterKeyboardSampler {
 	var isSampling = false;
 	var sampleStart, sampleEnd, onTimes, offTimes;
 	var sampleOnFunc, sampleOffFunc, sampleEvents;
-	var <pdef;
+	var <pdef, cSample = 1;
 
 	*initClass {
 		all = List[];
@@ -56,20 +56,55 @@ CVCenterKeyboardSampler {
 			sampleEvents[num].dur = sampleEvents[num].dur.add(offTimes[num] - onTimes[num]);
 		};
 		CVCenterKeyboard.all[keyboardDefName].on.add(sampleOnFunc);
-		CVCenterKeyboard.all[keyboardDefName].on.add(sampleOnFunc);
+		CVCenterKeyboard.all[keyboardDefName].off.add(sampleOffFunc);
 	}
 
 	start {
 		sampleStart = Main.elapsedTime;
 	}
 
-	stop { |synthDefName|
-		if (synthDefName.notNil) {
-			synthDefName = synthDefName.asSymbol;
-		} {
-			synthDefName = CVCenterKeyboard.all[keyboardDefName].currentSynthDef;
-		};
+	stop {
+		var synthDefName = CVCenterKeyboard.all[keyboardDefName].currentSynthDef;
+		var synthParams = CVCenterKeyboard.all[keyboardDefName].synthParams;
+		var pbproxy, pbinds, name, group, last, items;
+
 		sampleEnd = Main.elapsedTime;
 		pdef ?? { pdef = List[] };
+		sampleEvents.do { |e, num|
+			// add last event - not considered within noteOn, notOff
+			e.dur !? {
+				if (e.dur.last.isRest) {
+					last = sampleEnd - onTimes[num];
+				} {
+					last = Rest(sampleEnd - offTimes[num]);
+				};
+				e.dur = e.dur.add(last);
+				// [num, this.prDurSum(e.dur)].postln;
+			}
+		};
+		pbinds = sampleEvents.collect { |slot, num|
+			// slot.pairsDo { |k, v| [k, v].postln };
+			groups.add(group = ParGroup.new);
+			if (slot.isEmpty.not) {
+				items = [\instrument, synthDefName, \group, group, synthParams[synthDefName].pitchControl, num.midicps]
+				++ slot.collect(Pseq(_, inf)).asPairs;
+				pbproxy = Pbind.new.patternpairs_(items);
+			}
+		}.takeThese(_.isNil);
+		if (pbinds.isEmpty.not) {
+			// pbinds.do { |pb| pb.patternpairs.postln };
+			// pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
+			name = (synthDefName ++ "-" ++ cSample).asSymbol;
+			Ndef(name).mold(2, \audio, \elastic);
+			Ndef(name).source = Pdef(name, Ppar(pbinds, inf));
+			pdef.add(Ndef(name));
+
+			pdef.last.play(group: group);
+			#sampleStart, sampleEnd = nil!2;
+			cSample = cSample + 1;
+			"\nsampling keyboard events finished, should start playing now\n".inform;
+		} {
+			"\nnothing recorded, please try again\n".inform;
+		}
 	}
 }
