@@ -31,36 +31,42 @@ CVCenterKeyboardSampler {
 				keyboard.out;
 			];
 			argsValues = kbArgs ++ keyboard.valuePairs;
-			onTimes[num] = Main.elapsedTime;
-			argsValues.pairsDo { |k, v|
-				sampleEvents[num][k] ?? {
-					sampleEvents[num].put(k, [])
+			if (isSampling) {
+				onTimes[num] = Main.elapsedTime;
+				argsValues.pairsDo { |k, v|
+					sampleEvents[num][k] ?? {
+						sampleEvents[num].put(k, [])
+					};
+					if (v.size > 1) {
+						// multichannel-expand arrayed args properly
+						sampleEvents[num][k] = sampleEvents[num][k].add([v]);
+					} {
+						sampleEvents[num][k] = sampleEvents[num][k].add(v);
+					}
 				};
-				if (v.size > 1) {
-					// multichannel-expand arrayed args properly
-					sampleEvents[num][k] = sampleEvents[num][k].add([v]);
-				} {
-					sampleEvents[num][k] = sampleEvents[num][k].add(v);
-				}
-			};
-			sampleEvents[num].dur ?? {
-				sampleEvents[num].put(\dur, []);
-			};
-			sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(onTimes[num] - offTimes[num]));
+				sampleEvents[num].dur ?? {
+					sampleEvents[num].put(\dur, []);
+				};
+				sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(onTimes[num] - offTimes[num]));
+			}
 		};
 		sampleOffFunc = { |veloc, num, chan, src|
-			offTimes[num] = Main.elapsedTime;
-			sampleEvents[num].dur ?? {
-				sampleEvents[num].put(\dur, []);
-			};
-			sampleEvents[num].dur = sampleEvents[num].dur.add(offTimes[num] - onTimes[num]);
+			if (isSampling) {
+				offTimes[num] = Main.elapsedTime;
+				sampleEvents[num].dur ?? {
+					sampleEvents[num].put(\dur, []);
+				};
+				sampleEvents[num].dur = sampleEvents[num].dur.add(offTimes[num] - onTimes[num]);
+			}
 		};
 		CVCenterKeyboard.all[keyboardDefName].on.add(sampleOnFunc);
 		CVCenterKeyboard.all[keyboardDefName].off.add(sampleOffFunc);
 	}
 
+	// maybe it would be more convenient to have only one method 'sample' with a parameter onOff
 	start {
 		sampleStart = Main.elapsedTime;
+		isSampling = true;
 	}
 
 	stop {
@@ -68,6 +74,7 @@ CVCenterKeyboardSampler {
 		var synthParams = CVCenterKeyboard.all[keyboardDefName].synthParams;
 		var pbproxy, pbinds, name, group, last, items;
 
+		isSampling = false;
 		sampleEnd = Main.elapsedTime;
 		pdef ?? { pdef = List[] };
 		sampleEvents.do { |e, num|
