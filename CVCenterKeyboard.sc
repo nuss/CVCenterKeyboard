@@ -196,14 +196,14 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 
 	prAddWidgetActionsForKeyboard { |synthDefName, deactivateDefaultActions|
 		var args = SynthDescLib.at(synthDefName).controlDict.keys.asArray;
-		var wdgtName, nameString;
+		var wdgtName, argName, cv, nameString;
 
-		"args: %".format(args).postln;
 		this.prInitCVs(synthDefName, args);
 
-		args.do { |argName, i|
-			wdgtName = namesCVs[synthDefName][i * 3];
-			"wdgtName: %, argName: %".format(wdgtName, argName).postln;
+		forBy(0, namesCVs[synthDefName].size-1, 3) { |i|
+			wdgtName = namesCVs[synthDefName][i];
+			argName = namesCVs[synthDefName][i + 1];
+			cv = namesCVs[synthDefName][i + 2];
 
 			CVCenter.cvWidgets[wdgtName] !? {
 				if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
@@ -287,9 +287,8 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 						namesCVs[synthDefName].add(argName).add(CVCenter.at(wdgtName));
 					}
 				}
-			};
-			// wdgtNames[synthDefName] = wdgtNames[synthDefName].add(wdgtName);
-		};
+			}
+		}
 	}
 
 	// private
