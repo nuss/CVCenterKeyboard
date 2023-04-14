@@ -332,25 +332,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 				}
 			}) {
 				CVCenter.scv[keyboardDefName][synthDefName][num] = Synth(synthDefName, argsValues, group);
-			};
-			// if (sampling) {
-			// 	onTimes[num] = Main.elapsedTime;
-			// 	argsValues.pairsDo { |k, v|
-			// 		sampleEvents[num][k] ?? {
-			// 			sampleEvents[num].put(k, [])
-			// 		};
-			// 		if (v.size > 1) {
-			// 			// multichannel-expand arrayed args properly
-			// 			sampleEvents[num][k] = sampleEvents[num][k].add([v]);
-			// 		} {
-			// 			sampleEvents[num][k] = sampleEvents[num][k].add(v);
-			// 		};
-			// 	};
-			// 	sampleEvents[num].dur ?? {
-			// 		sampleEvents[num].put(\dur, []);
-			// 	};
-			// 	sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(onTimes[num] - offTimes[num]));
-			// }
+			}
 		});
 
 		off = MIDIFunc.noteOff({ |veloc, num, chan, src|
@@ -362,14 +344,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			}) {
 				CVCenter.scv[keyboardDefName][synthDefName][num].release;
 				CVCenter.scv[keyboardDefName][synthDefName][num] = nil;
-			};
-			// if (sampling) {
-			// 	offTimes[num] = Main.elapsedTime;
-			// 	sampleEvents[num].dur ?? {
-			// 		sampleEvents[num].put(\dur, []);
-			// 	};
-			// 	sampleEvents[num].dur = sampleEvents[num].dur.add(offTimes[num] - onTimes[num]);
-			// }
+			}
 		});
 
 		bend = MIDIFunc.bend({ |bendVal, chan, src|
@@ -430,9 +405,10 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		} {
 			synthDefName = currentSynthDef;
 		};
-		on !? { on[keyboardDefName].free };
-		off !? { off[keyboardDefName].free };
-		bend !? { bend[keyboardDefName].free };
+		"synthDefName: %".format(synthDefName).postln;
+		on !? { on.free };
+		off !? { off.free };
+		bend !? { bend.free };
 		CVCenter.scv[keyboardDefName][synthDefName].do(_.release);
 		CVCenter.scv[keyboardDefName].removeAt(synthDefName);
 		CVCenter.scv.removeAt(keyboardDefName);
