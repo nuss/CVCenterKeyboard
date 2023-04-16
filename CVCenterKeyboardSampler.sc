@@ -64,54 +64,77 @@ CVCenterKeyboardSampler {
 	}
 
 	// maybe it would be more convenient to have only one method 'sample' with a parameter onOff
-	start {
-		sampleStart = Main.elapsedTime;
-		isSampling = true;
-	}
-
-	stop {
-		var synthDefName = CVCenterKeyboard.all[keyboardDefName].currentSynthDef;
-		var synthParams = CVCenterKeyboard.all[keyboardDefName].synthParams;
+	sample {
+		var synthDefName, synthParams;
 		var pbproxy, pbinds, name, group, last, items;
 
-		isSampling = false;
-		sampleEnd = Main.elapsedTime;
-		pdef ?? { pdef = List[] };
-		sampleEvents.do { |e, num|
-			// add last event - not considered within noteOn, notOff
-			e.dur !? {
-				if (e.dur.last.isRest) {
-					last = sampleEnd - onTimes[num];
-				} {
-					last = Rest(sampleEnd - offTimes[num]);
-				};
-				e.dur = e.dur.add(last);
-				// [num, this.prDurSum(e.dur)].postln;
-			}
-		};
-		pbinds = sampleEvents.collect { |slot, num|
-			// slot.pairsDo { |k, v| [k, v].postln };
-			groups.add(group = ParGroup.new);
-			if (slot.isEmpty.not) {
-				items = [\instrument, synthDefName, \group, group, synthParams[synthDefName].pitchControl, num.midicps]
-				++ slot.collect(Pseq(_, inf)).asPairs;
-				pbproxy = Pbind.new.patternpairs_(items);
-			}
-		}.takeThese(_.isNil);
-		if (pbinds.isEmpty.not) {
-			// pbinds.do { |pb| pb.patternpairs.postln };
-			// pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
-			name = (synthDefName ++ "-" ++ cSample).asSymbol;
-			Ndef(name).mold(2, \audio, \elastic);
-			Ndef(name).source = Pdef(name, Ppar(pbinds, inf));
-			pdef.add(Ndef(name));
-
-			pdef.last.play(group: group);
-			#sampleStart, sampleEnd = nil!2;
-			cSample = cSample + 1;
-			"\nsampling keyboard events finished, should start playing now\n".inform;
+		if (isSampling.not) {
+			sampleStart = Main.elapsedTime;
+			this.prResetSampling;
+			isSampling = true;
 		} {
-			"\nnothing recorded, please try again\n".inform;
+			synthDefName = CVCenterKeyboard.all[keyboardDefName].currentSynthDef;
+			synthParams = CVCenterKeyboard.all[keyboardDefName].synthParams;
+			isSampling = false;
+			sampleEnd = Main.elapsedTime;
+			pdef ?? { pdef = List[] };
+			sampleEvents.do { |e, num|
+				// add last event - not considered within noteOn, notOff
+				e.dur !? {
+					if (e.dur.last.isRest) {
+						last = sampleEnd - onTimes[num];
+					} {
+						last = Rest(sampleEnd - offTimes[num]);
+					};
+					e.dur = e.dur.add(last);
+					// [num, this.prDurSum(e.dur)].postln;
+				}
+			};
+			groups.add(group = ParGroup.new);
+			pbinds = sampleEvents.collect { |slot, num|
+				// slot.pairsDo { |k, v| [k, v].postln };
+				if (slot.isEmpty.not) {
+					items = [\instrument, synthDefName, \group, group, synthParams[synthDefName].pitchControl, num.midicps]
+					++ slot.collect(Pseq(_, inf)).asPairs;
+					pbproxy = Pbind.new.patternpairs_(items);
+				}
+			}.takeThese(_.isNil);
+			if (pbinds.isEmpty.not) {
+				// pbinds.do { |pb| pb.patternpairs.postln };
+				// pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
+				name = (synthDefName ++ "-" ++ cSample).asSymbol;
+				Ndef(name).mold(2, \audio, \elastic);
+				Ndef(name).source = Pdef(name, Ppar(pbinds, inf));
+				pdef.add(Ndef(name));
+
+				pdef.last.play(group: group);
+				#sampleStart, sampleEnd = nil!2;
+				cSample = cSample + 1;
+				"\nsampling keyboard events finished, should start playing now\n".inform;
+			} {
+				"\nnothing recorded, please try again\n".inform;
+			}
+		}
+	}
+
+	prResetSampling {
+		// starttime, absolute
+		#onTimes, offTimes = Main.elapsedTime!128!2;
+		// the array holding all events for all 128 midi keys
+		sampleEvents = ()!128;
+	}
+
+	clearSamples { |...indices|
+		if (indices.isEmpty) {
+			pdef.do { |p, i|
+				p.source.clear;
+				pdef.remove(p);
+			}
+		} {
+			indices.do { |i|
+				pdef[i].source.clear;
+				pdef.removeAt(i);
+			};
 		}
 	}
 }

@@ -415,7 +415,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 	}
 
 	// add the sequencer, fed through sampling keyboard strokes
-	addSampler { |group|
+	addSampler {
 		if (sampler.isNil) {
 			sampler = CVCenterKeyboardSampler(keyboardDefName);
 		} {
