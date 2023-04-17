@@ -210,9 +210,9 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 					#[lo, hi].do { |slot|
 						var setString;
 						if (slot === \lo) {
-							setString = "[cv.value, CVCenter.at('%').hi]".format(wdgtName);
+							setString = "[cv.value, CVCenter.at('%').hi.value]".format(wdgtName);
 						} {
-							setString = "[CVCenter.at('%').lo, cv.value]".format(wdgtName);
+							setString = "[CVCenter.at('%').lo.value, cv.value]".format(wdgtName);
 						};
 						CVCenter.addActionAt(
 							wdgtName, 'keyboard set arg',
@@ -420,97 +420,6 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			sampler = CVCenterKeyboardSampler(keyboardDefName);
 		} {
 			"The given keyboard '%' has already an assigned sampler.".format(keyboardDefName).error;
-		}
-	}
-
-	// start/stop sampling
-	activateSampling { |onOff = true, synthDefName|
-		var pbinds, items, pbproxy, name, last;
-
-		if (onOff.not) {
-			sampleGroups ?? { sampleGroups = List[] };
-			sampleGroups.add(group);
-			// TODO: create new group. Old group, however must remain untouched in sampleGroups
-		};
-
-		if (synthDefName.notNil) {
-			synthDefName = synthDefName.asSymbol;
-		} {
-			synthDefName = currentSynthDef;
-		};
-		sampling = onOff;
-		if (sampling == false) {
-			sampleEnd = Main.elapsedTime;
-			pdef ?? { pdef = List[] };
-			sampleEvents.do { |e, num|
-				// add last event - not considered within noteOn, notOff
-				e.dur !? {
-					if (e.dur.last.isRest) {
-						last = sampleEnd - onTimes[num];
-					} {
-						last = Rest(sampleEnd - offTimes[num]);
-					};
-					e.dur = e.dur.add(last);
-					// [num, this.prDurSum(e.dur)].postln;
-				}
-			};
-			pbinds = sampleEvents.collect { |slot, num|
-				// slot.pairsDo { |k, v| [k, v].postln };
-				if (slot.isEmpty.not) {
-					items = [\instrument, synthDefName, \group, group, synthParams[synthDefName].pitchControl, num.midicps]
-					++ slot.collect(Pseq(_, inf)).asPairs;
-					/*++ slot.collect { |v, k|
-						if (CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).notNil) {
-							if (v.size < 2) {
-							Pseq(CVCenter.at((k.asString[0].toUpper ++ k.asString[1..]).asSymbol).value_(v), inf)}
-						}
-					};*/
-					pbproxy = Pbind.new.patternpairs_(items);
-				}
-			}.takeThese(_.isNil);
-			if (pbinds.isEmpty.not) {
-				// pbinds.do { |pb| pb.patternpairs.postln };
-				// pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
-				name = (synthDefName ++ "-" ++ cSample).asSymbol;
-				Ndef(name).mold(2, \audio, \elastic);
-				Ndef(name).source = Pdef(name, Ppar(pbinds, inf));
-				pdef.add(Ndef(name));
-				pdef.last.play(group: group);
-				#sampleStart, sampleEnd = nil!2;
-				cSample = cSample + 1;
-				"\nsampling keyboard events finished, should start playing now\n".inform;
-			} {
-				"\nnothing recorded, please try again\n".inform;
-			}
-		} {
-			sampleStart = Main.elapsedTime;
-			this.prResetSampling;
-			"\nsampling keyboard events started\n".inform;
-		};
-	}
-
-	prDurSum { |durs|
-		^durs.sum { |num| if (num.isRest) { num.dur } { num }}
-	}
-
-	prResetSampling {
-		// starttime, absolute
-		#onTimes, offTimes = Main.elapsedTime!128!2;
-		// the array holding all events for all 128 midi keys
-		sampleEvents = ()!128;
-	}
-
-	clearSamples { |...indices|
-		if (indices.isEmpty) {
-			pdef.do { |p, i|
-				p.source.clear;
-				pdef.remove(p);
-			}
-		} {
-			indices.do { |i|
-				pdef[i].source.clear;
-				pdef.removeAt(i);
-			};
 		}
 	}
 
