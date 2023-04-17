@@ -110,6 +110,7 @@ CVCenterKeyboardSampler {
 				pdef.last.play(group: group);
 				#sampleStart, sampleEnd = nil!2;
 				cSample = cSample + 1;
+				this.prAddCVActions(synthDefName, groups.indexOf(group));
 				"\nsampling keyboard events finished, should start playing now\n".inform;
 			} {
 				"\nnothing recorded, please try again\n".inform;
@@ -135,6 +136,29 @@ CVCenterKeyboardSampler {
 				pdef[i].source.clear;
 				pdef.removeAt(i);
 			};
+		}
+	}
+
+	prAddCVActions { |synthDefName, groupIndex|
+		var thisWdgtsAndCtrls = CVCenterKeyboard.all[keyboardDefName].namesCVs[synthDefName].clump(3);
+		thisWdgtsAndCtrls.do { |col|
+			// col is a group of 3 parameters:
+			// 0: the widget's name
+			// 1: the arg to be set
+			// 2: the widget's CV
+			if (col[1].isArray) {
+				// FIXME: possibly 'all' should be a Dictionary
+				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
+					CVCenterKeyboardSampler.all[%].groups[%].set('%', [cv.value, CVCenter.at('%').hi.value])
+				}".format(this.class.all.indexOF(this), groupIndex, col[1], col[0]), \lo);
+				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
+					CVCenterKeyboardSampler.all[%].groups[%].set('%', [CVCenter.at('%').lo.value, cv.value])
+				}".format(this.class.all.indexOF(this), groupIndex, col[1], col[0]), \hi);
+			} {
+				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
+					CVCenterKeyboardSampler.all[%].groups[%].set('%', cv.value)
+				}".format(this.class.all.indexOF(this), groupIndex, col[1]));
+			}
 		}
 	}
 }
