@@ -16,6 +16,10 @@ CVCenterKeyboardSampler {
 	}
 
 	init {
+		if (CVCenterKeyboard.all[keyboardDefName].isNil) {
+			"The given CVCenterKeyboard doesn't exist.".error;
+			^nil
+		};
 		groups = List[];
 		sampleOnFunc = { |veloc, num, chan, src|
 			var keyboard = CVCenterKeyboard.all[keyboardDefName];
@@ -64,19 +68,21 @@ CVCenterKeyboardSampler {
 	}
 
 	// maybe it would be more convenient to have only one method 'sample' with a parameter onOff
-	sample {
+	sample { |onOff|
 		var synthDefName, synthParams;
 		var pbproxy, pbinds, name, group, last, items;
 
-		if (isSampling.not) {
+		case
+		{ isSampling == false or: { onOff == false }} {
+			isSampling = true;
 			sampleStart = Main.elapsedTime;
 			this.prResetSampling;
-			isSampling = true;
-		} {
-			synthDefName = CVCenterKeyboard.all[keyboardDefName].currentSynthDef;
-			synthParams = CVCenterKeyboard.all[keyboardDefName].synthParams;
+		}
+		{ isSampling == true or: { onOff == true }} {
 			isSampling = false;
 			sampleEnd = Main.elapsedTime;
+			synthDefName = CVCenterKeyboard.all[keyboardDefName].currentSynthDef;
+			synthParams = CVCenterKeyboard.all[keyboardDefName].synthParams;
 			pdef ?? { pdef = List[] };
 			sampleEvents.do { |e, num|
 				// add last event - not considered within noteOn, notOff
@@ -99,7 +105,7 @@ CVCenterKeyboardSampler {
 					pbproxy = Pbind.new.patternpairs_(items);
 				}
 			}.takeThese(_.isNil);
-			if (pbinds.isEmpty.not) {
+			if (pbinds.notEmpty) {
 				// pbinds.do { |pb| pb.patternpairs.postln };
 				// pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
 				name = (synthDefName ++ "-" ++ cSample).asSymbol;
