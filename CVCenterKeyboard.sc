@@ -21,20 +21,28 @@ CVCenterKeyboard {
 		};
 	}
 
-	*new { |keyboardDefName=\keyboard|
-		^super.newCopyArgs(keyboardDefName.asSymbol).init;
+	*new { |keyboardDefName=\keyboard, addSampler=true, addWidget=true, addSelect=false|
+		^super.newCopyArgs(keyboardDefName.asSymbol).init(addSampler, addWidget, addSelect);
 	}
 
-	init {
-		all[keyboardDefName] ?? { all.put(keyboardDefName, this) };
-		// #on, off, bend = ()!3;
-		group ?? { ParGroup.new };
-		synthDefNames ?? { synthDefNames = List() };
-		mappedBusses ? mappedBusses = ();
+	init { |addSampler, addWidget, addSelect|
+		all.put(keyboardDefName, this);
+		group = ParGroup.new;
+		synthDefNames = List();
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src| });
 		off = MIDIFunc.noteff({ |veloc, num, chan, src| });
 		bend = MIDIFunc.bend({ |bendVal, chan, src| });
-		#onFunc, offFunc, bendFunc = ()!3;
+		#onFunc, offFunc, bendFunc, mappedBusses = ()!4;
+		if (addSampler and: {
+			sampler.isNil and: {
+				\CVCenterKeyboardSampler.asClass.notNil
+			}
+		}) {
+			sampler = CVCenterKeyboardSampler(keyboardDefName)
+		};
+		if (addWidget) {
+			CVCenter.use(keyboardDefName, svItems: ['select Synth...'])
+		}
 	}
 
 	addSynthDef { |synthDefName, connectMidi = false|
@@ -74,7 +82,6 @@ CVCenterKeyboard {
 			).throw;
 		};
 
-		synthDefNames ?? { synthDefNames = List() };
 		synthDefNames.indexOf(synthDefName) ?? {
 			// dependency declared in CVCenterKeyboardSelect:-init
 			// automatically update the select's items
@@ -91,7 +98,7 @@ CVCenterKeyboard {
 
 	// keyboardArg is the arg that will be set through playing the keyboard
 	// bendArg will be the arg that's set through the pitch bend wheel
-	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter=#[], theServer, outbus=0, deactivateDefaultWidgetActions = true, srcID, tab, addSampler=true|
+	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter=#[], theServer, outbus=0, deactivateDefaultWidgetActions = true, srcID, tab|
 		var testSynth, notesEnv, excemptArgs = [];
 		var args = [];
 
@@ -142,7 +149,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		};
 		velocControl !? {
 			synthParams[synthDefName].velocControl = velocControl;
-				includeInCVCenter.includes(velocControl).not.if {
+			includeInCVCenter.includes(velocControl).not.if {
 				excemptArgs = excemptArgs.add(velocControl)
 			}
 		};
@@ -175,13 +182,6 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			);
 			testSynth.release;
 			this.prInitKeyboard(synthDefName);
-			if (addSampler and: {
-				sampler.isNil and: {
-					\CVCenterKeyboardSampler.asClass.notNil
-				}
-			}) {
-				sampler = CVCenterKeyboardSampler(keyboardDefName)
-			}
 		}
 	}
 
