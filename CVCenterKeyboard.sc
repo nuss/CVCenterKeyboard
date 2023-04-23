@@ -1,6 +1,6 @@
 CVCenterKeyboard {
 	classvar <all;
-	var <keyboardDefName, <synthDefNames, <synthParams;
+	var <keyboardDefName, <synthDefNames, <synthParams, <wdgtName;
 	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, <wdgtNames, <outProxy;
 	var <sampler, sampling = false, sampleEvents, <pdef, cSample = 1;
@@ -21,16 +21,25 @@ CVCenterKeyboard {
 		};
 	}
 
-	*new { |keyboardDefName=\keyboard, addSampler=true, addWidget=true, addSelect=false|
-		^super.newCopyArgs(keyboardDefName.asSymbol).init(addSampler, addWidget, addSelect);
+	*new { |keyboardDefName=\keyboard, addSampler=true, addSelect=false|
+		^super.newCopyArgs(keyboardDefName.asSymbol).init(addSampler, addSelect);
 	}
 
-	init { |addSampler, addWidget, addSelect|
+	init { |addSampler, addSelect|
 		all.put(keyboardDefName, this);
 		group = ParGroup.new;
 		synthDefNames = List();
+		if (MIDIClient.initialized.not) {
+			MIDIClient.init;
+			// doesn't seem to work properly on Ubuntustudio 16
+			// possibly has to be done manually in QJackQtl...
+			try { MIDIIn.connectAll } { |error|
+				error.postln;
+				"MIDIIn.connectAll failed. Please establish the necessary connections manually".warn;
+			}
+		};
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src| });
-		off = MIDIFunc.noteff({ |veloc, num, chan, src| });
+		off = MIDIFunc.noteOff({ |veloc, num, chan, src| });
 		bend = MIDIFunc.bend({ |bendVal, chan, src| });
 		#onFunc, offFunc, bendFunc, mappedBusses = ()!4;
 		if (addSampler and: {
@@ -40,9 +49,8 @@ CVCenterKeyboard {
 		}) {
 			sampler = CVCenterKeyboardSampler(keyboardDefName)
 		};
-		if (addWidget) {
-			CVCenter.use(keyboardDefName, svItems: ['select Synth...'])
-		}
+		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
+		// if (addSelect) {...}
 	}
 
 	addSynthDef { |synthDefName, connectMidi = false|
@@ -50,12 +58,12 @@ CVCenterKeyboard {
 	}
 
 	removeSynthDef { |synthDefName|
-		synthDefNames !? {
-			synthDefNames[synthDefName.asSymbol] !? {
-				synthDefNames.remove(synthDefName).changed(\value);
-				CVCenter.scv[keyboardDefName].removeAt(synthDefName);
-			}
-		}
+		CVCenter.at(keyboardDefName) !? {
+			CVCenter.at(keyboardDefName).items.remove(synthDefName);
+			CVCenter.at(keyboardDefName).items_(CVCenter.at(keyboardDefName).items);
+		};
+		[onFunc, offFunc].do { |f| f[synthDefName] = nil };
+		CVCenter.scv[keyboardDefName].removeAt(synthDefName);
 	}
 
 	*at { |keyboardDefName|
@@ -82,10 +90,14 @@ CVCenterKeyboard {
 			).throw;
 		};
 
-		synthDefNames.indexOf(synthDefName) ?? {
+		if (CVCenter.at(keyboardDefName).notNil and: {
+			CVCenter.at(keyboardDefName).items.includes(synthDefName).not
+		}) {
 			// dependency declared in CVCenterKeyboardSelect:-init
 			// automatically update the select's items
-			synthDefNames.add(synthDefName).changed(\value);
+			CVCenter.at(keyboardDefName) !? {
+				CVCenter.at(keyboardDefName).items_(CVCenter.at(keyboardDefName).items ++ synthDefName)
+			}
 		};
 
 
@@ -93,7 +105,7 @@ CVCenterKeyboard {
 			this.bendSpec = \midiBend.asSpec;
 		};
 
-		this.prMidiInit(synthDefName, connectMidi);
+		this.prEnvInit(synthDefName);
 	}
 
 	// keyboardArg is the arg that will be set through playing the keyboard
@@ -113,9 +125,8 @@ CVCenterKeyboard {
 		synthDefName = synthDefName.asSymbol;
 		currentSynthDef = synthDefName;
 
-		synthDefNames.indexOf(synthDefName) ?? {
-			Error("SynthDef '%' must be added to CVCenterKeyboard instance '%'
-before using it".format(synthDefName, keyboardDefName)).throw;
+		SynthDescLib.at(synthDefName) ?? {
+			Error("No SynthDef '%' found in the SynthDescLib".format(synthDefName)).throw;
 		};
 
 		if (theServer.isNil) {
@@ -186,25 +197,13 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 	}
 
 	// private
-	prMidiInit { |synthDefName, connectMidi|
+	prEnvInit { |synthDefName|
 		CVCenter.scv[keyboardDefName] ?? { CVCenter.scv.put(keyboardDefName, ()) };
 		if (CVCenter.scv[keyboardDefName][synthDefName].isNil) {
 			CVCenter.scv[keyboardDefName].put(synthDefName, Array.newClear(128));
-			if (MIDIClient.initialized.not) {
-				MIDIClient.init;
-				// doesn't seem to work properly on Ubuntustudio 16
-				// possibly has to be done manually in QJackQtl...
-				if (connectMidi) {
-					try { MIDIIn.connectAll } { |error|
-						error.postln;
-						"MIDIIn.connectAll failed. Please establish the necessary connections manually".warn;
-					}
-				}
-			}
 		} {
 			"A keyboard named '%' has already been initialized".format(keyboardDefName).warn;
 		}
-
 	}
 
 	prAddWidgetActionsForKeyboard { |synthDefName, deactivateDefaultActions|
@@ -250,27 +249,8 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		this.freeHangingNodes; // just in case...
 		CVCenter.scv.put(keyboardDefName, ());
 		CVCenter.scv[keyboardDefName].put(synthDefName, nil!128);
-		this.updateKeyboard(synthDefName);
+		// this.updateKeyboard(synthDefName);
 	}
-
-	/*reInit { |synthDefName|
-		var args;
-		if (synthDefName.notNil) {
-			synthDefName = synthDefName.asSymbol;
-		} {
-			synthDefName = currentSynthDef;
-		};
-		args = SynthDescLib.at(synthDefName).controlDict.keys.asArray;
-		CVCenter.scv[keyboardDefName] ?? { CVCenter.scv.put(keyboardDefName, ()) };
-		CVCenter.scv[keyboardDefName][synthDefName] !? {
-			"re-initializing: '%'\n".postf(synthDefName);
-			this.free;
-			CVCenter.scv.put(keyboardDefName, ());
-			CVCenter.scv[keyboardDefName].put(synthDefName, Array.newClear(128));
-			this.prInitCVs(synthDefName, args);
-			this.prInitKeyboard(synthDefName);
-		}
-	}*/
 
 	sample { |onOff|
 		if (sampler.notNil) {
@@ -314,9 +294,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 
 	// private
 	prInitKeyboard { |synthDefName|
-		group ?? {
-			group = ParGroup.new;
-		};
+		group = ParGroup.new;
 
 		onFunc.put(synthDefName, { |veloc, num, chan, src|
 			var argsValues, wdgtsExcluded;
@@ -347,7 +325,11 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			}.flatten(1);
 			valuePairs = pairs.deepCollect(2, _.value);
 			argsValues = kbArgs ++ valuePairs;
-			if (this.debug) { "on['%']['%'][num: %]: %\n\nchan: %, src: %\n".postf(keyboardDefName, synthDefName, num, argsValues, chan, src) };
+			if (this.debug) {
+				"\non['%']\n\tsynthDefName: '%' \n\tnum: % \n\tchan: % \n\tsrc: % \n\targsValues: %".format(
+					keyboardDefName, synthDefName, num, chan, src, argsValues
+				).postln
+			};
 			if (synthParams[synthDefName].srcID.isNil or: {
 				synthParams[synthDefName].srcID.notNil and: {
 					synthParams[synthDefName].srcID == src
@@ -358,7 +340,9 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 		});
 
 		offFunc.put(synthDefName, { |veloc, num, chan, src|
-			if (this.debug) { "off['%']['%'][num: %]\n\n".postf(keyboardDefName, synthDefName, num) };
+			if (this.debug) {
+				"\noff['%']\n\tsynthDefName: '%' \n\tnum: %".format(keyboardDefName, synthDefName, num)
+			}.postln;
 			if (synthParams[synthDefName].srcID.isNil or: {
 				synthParams[synthDefName].srcID.notNil and: {
 					synthParams[synthDefName].srcID == src
@@ -369,7 +353,7 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 			}
 		});
 
-		bendFunc.put({ |bendVal, chan, src|
+		bendFunc.put(synthDefName, { |bendVal, chan, src|
 			if (this.debug) { "bend['%']['%']: %\n".postf(keyboardDefName, synthDefName, bendVal) };
 			if (synthParams[synthDefName].srcID.isNil or: {
 				synthParams[synthDefName].srcID.notNil and: {
@@ -381,6 +365,9 @@ before using it".format(synthDefName, keyboardDefName)).throw;
 				})
 			}
 		});
+		this.on.add(onFunc[synthDefName]);
+		this.off.add(offFunc[synthDefName]);
+		this.bend.add(bendFunc[synthDefName]);
 	}
 
 	addOutProxy { |synthDefName, numChannels=2, useNdef=false, transbus, outbus, play=true|

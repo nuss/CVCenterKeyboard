@@ -22,36 +22,41 @@ CVCenterKeyboardSampler {
 		};
 		groups = List[];
 		sampleOnFunc = { |veloc, num, chan, src|
-			var keyboard = CVCenterKeyboard.all[keyboardDefName];
+			var keyboard = CVCenterKeyboard.all[keyboardDefName], kbArgs;
 			var argsValues;
-			var kbArgs = [
-				keyboard.synthParams[keyboard.currentSynthDef].pitchControl,
-				num.midicps,
-				keyboard.synthParams[keyboard.currentSynthDef].velocControl,
-				veloc * 0.005,
-				keyboard.synthParams[keyboard.currentSynthDef].outControl,
-				// FIXME: this should probably be this.out, shouldn't it?
-				// synthParams[synthDefName].out
-				keyboard.out;
-			];
-			argsValues = kbArgs ++ keyboard.valuePairs;
-			if (isSampling) {
-				onTimes[num] = Main.elapsedTime;
-				argsValues.pairsDo { |k, v|
-					sampleEvents[num][k] ?? {
-						sampleEvents[num].put(k, [])
+
+			if (keyboard.synthParams.isNil) {
+				"No SynthDef initialized for keyboard yet. Call \"setUpControls\" on your CVCenterKeyboard instance first.".warn;
+			} {
+				kbArgs = [
+					keyboard.synthParams[keyboard.currentSynthDef].pitchControl,
+					num.midicps,
+					keyboard.synthParams[keyboard.currentSynthDef].velocControl,
+					veloc * 0.005,
+					keyboard.synthParams[keyboard.currentSynthDef].outControl,
+					// FIXME: this should probably be this.out, shouldn't it?
+					// synthParams[synthDefName].out
+					keyboard.out;
+				];
+				argsValues = kbArgs ++ keyboard.valuePairs;
+				if (isSampling) {
+					onTimes[num] = Main.elapsedTime;
+					argsValues.pairsDo { |k, v|
+						sampleEvents[num][k] ?? {
+							sampleEvents[num].put(k, [])
+						};
+						if (v.size > 1) {
+							// multichannel-expand arrayed args properly
+							sampleEvents[num][k] = sampleEvents[num][k].add([v]);
+						} {
+							sampleEvents[num][k] = sampleEvents[num][k].add(v);
+						}
 					};
-					if (v.size > 1) {
-						// multichannel-expand arrayed args properly
-						sampleEvents[num][k] = sampleEvents[num][k].add([v]);
-					} {
-						sampleEvents[num][k] = sampleEvents[num][k].add(v);
-					}
-				};
-				sampleEvents[num].dur ?? {
-					sampleEvents[num].put(\dur, []);
-				};
-				sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(onTimes[num] - offTimes[num]));
+					sampleEvents[num].dur ?? {
+						sampleEvents[num].put(\dur, []);
+					};
+					sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(onTimes[num] - offTimes[num]));
+				}
 			}
 		};
 		sampleOffFunc = { |veloc, num, chan, src|
