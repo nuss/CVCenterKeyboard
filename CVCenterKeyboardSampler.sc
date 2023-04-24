@@ -1,6 +1,6 @@
 CVCenterKeyboardSampler {
 	classvar <all;
-	var keyboardDefName;
+	var <keyboard;
 	var <groups;
 	var isSampling = false;
 	var sampleStart, sampleEnd, onTimes, offTimes;
@@ -8,22 +8,22 @@ CVCenterKeyboardSampler {
 	var <pdef, cSample = 1;
 
 	*initClass {
-		all = List[];
+		all = ();
 	}
 
-	*new { |keyboardDefName|
-		^super.newCopyArgs(keyboardDefName).init;
+	*new { |keyboard|
+		^super.newCopyArgs(keyboard).init;
 	}
 
 	init {
-		if (CVCenterKeyboard.all[keyboardDefName].isNil) {
-			"The given CVCenterKeyboard doesn't exist.".error;
+		keyboard ?? {
+			"No CVCenterKeyboard instance given!".error;
 			^nil
 		};
+		all.put(keyboard.keyboardDefName, this);
 		groups = List[];
 		sampleOnFunc = { |veloc, num, chan, src|
-			var keyboard = CVCenterKeyboard.all[keyboardDefName], kbArgs;
-			var argsValues;
+			var kbArgs, argsValues;
 
 			if (keyboard.synthParams.isNil) {
 				"No SynthDef initialized for keyboard yet. Call \"setUpControls\" on your CVCenterKeyboard instance first.".warn;
@@ -68,8 +68,8 @@ CVCenterKeyboardSampler {
 				sampleEvents[num].dur = sampleEvents[num].dur.add(offTimes[num] - onTimes[num]);
 			}
 		};
-		CVCenterKeyboard.all[keyboardDefName].on.add(sampleOnFunc);
-		CVCenterKeyboard.all[keyboardDefName].off.add(sampleOffFunc);
+		keyboard.on.add(sampleOnFunc);
+		keyboard.off.add(sampleOffFunc);
 	}
 
 	// maybe it would be more convenient to have only one method 'sample' with a parameter onOff
@@ -86,8 +86,8 @@ CVCenterKeyboardSampler {
 		{ isSampling == true or: { onOff == true }} {
 			isSampling = false;
 			sampleEnd = Main.elapsedTime;
-			synthDefName = CVCenterKeyboard.all[keyboardDefName].currentSynthDef;
-			synthParams = CVCenterKeyboard.all[keyboardDefName].synthParams;
+			synthDefName = keyboard.currentSynthDef;
+			synthParams = keyboard.synthParams;
 			pdef ?? { pdef = List[] };
 			sampleEvents.do { |e, num|
 				// add last event - not considered within noteOn, notOff
@@ -151,7 +151,7 @@ CVCenterKeyboardSampler {
 	}
 
 	prAddCVActions { |synthDefName, groupIndex|
-		var thisWdgtsAndCtrls = CVCenterKeyboard.all[keyboardDefName].namesCVs[synthDefName].clump(3);
+		var thisWdgtsAndCtrls = keyboard.namesCVs[synthDefName].clump(3);
 		thisWdgtsAndCtrls.do { |col|
 			// col is a group of 3 parameters:
 			// 0: the widget's name
@@ -160,15 +160,15 @@ CVCenterKeyboardSampler {
 			if (col[1].isArray) {
 				// FIXME: possibly 'all' should be a Dictionary
 				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
-					CVCenterKeyboardSampler.all[%].groups[%].set('%', [cv.value, CVCenter.at('%').hi.value])
-				}".format(this.class.all.indexOF(this), groupIndex, col[1], col[0]), \lo);
+					CVCenterKeyboardSampler.all['%'].groups[%].set('%', [cv.value, CVCenter.at('%').hi.value])
+				}".format(keyboard.keyboardDefName, groupIndex, col[1], col[0]), \lo);
 				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
-					CVCenterKeyboardSampler.all[%].groups[%].set('%', [CVCenter.at('%').lo.value, cv.value])
-				}".format(this.class.all.indexOF(this), groupIndex, col[1], col[0]), \hi);
+					CVCenterKeyboardSampler.all['%'].groups[%].set('%', [CVCenter.at('%').lo.value, cv.value])
+				}".format(keyboard.keyboardDefName, groupIndex, col[1], col[0]), \hi);
 			} {
 				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
-					CVCenterKeyboardSampler.all[%].groups[%].set('%', cv.value)
-				}".format(this.class.all.indexOF(this), groupIndex, col[1]));
+					CVCenterKeyboardSampler.all['%'].groups[%].set('%', cv.value)
+				}".format(keyboard.keyboardDefName, groupIndex, col[1]));
 			}
 		}
 	}

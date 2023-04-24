@@ -47,7 +47,7 @@ CVCenterKeyboard {
 				\CVCenterKeyboardSampler.asClass.notNil
 			}
 		}) {
-			sampler = CVCenterKeyboardSampler(keyboardDefName)
+			sampler = CVCenterKeyboardSampler(this)
 		};
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
 		// if (addSelect) {...}
@@ -256,7 +256,7 @@ CVCenterKeyboard {
 		if (sampler.notNil) {
 			sampler.sample(onOff)
 		} {
-			"No CVCenterKeyboardSampler for the given CVCenterKeyboard exists! Create one by calling CVCenterKeyboardSampler('%')".format(keyboardDefName).error
+			"No CVCenterKeyboardSampler for the given CVCenterKeyboard exists! Create one by calling CVCenterKeyboardSampler(<myKeyboard>).".error
 		}
 	}
 
