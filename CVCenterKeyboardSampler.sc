@@ -156,8 +156,8 @@ CVCenterKeyboardSampler {
 			// col is a group of 3 parameters:
 			// 0: the widget's name
 			// 1: the arg to be set
-			// 2: the widget's CV
-			if (col[1].isArray) {
+			// 2: the widget's CV(s) - if it's an Array it's a CVWidget2D
+			if (col[2].isArray) {
 				// FIXME: possibly 'all' should be a Dictionary
 				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
 					CVCenterKeyboardSampler.all['%'].groups[%].set('%', [cv.value, CVCenter.at('%').hi.value])
