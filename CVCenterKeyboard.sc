@@ -50,7 +50,6 @@ CVCenterKeyboard {
 			sampler = CVCenterKeyboardSampler(this)
 		};
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
-		// if (addSelect) {...}
 	}
 
 	addSynthDef { |synthDefName, connectMidi = false|
@@ -110,7 +109,7 @@ CVCenterKeyboard {
 
 	// keyboardArg is the arg that will be set through playing the keyboard
 	// bendArg will be the arg that's set through the pitch bend wheel
-	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter=#[], theServer, outbus=0, deactivateDefaultWidgetActions = true, srcID, tab|
+	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter=#[], theServer, outbus=0, deactivateDefaultWidgetActions = true, srcID, tab, initMidi=false|
 		var testSynth, notesEnv, excemptArgs = [];
 		var args = [];
 
@@ -192,7 +191,9 @@ CVCenterKeyboard {
 				}
 			);
 			testSynth.release;
-			this.prInitKeyboard(synthDefName);
+			if (initMidi) {
+				this.prInitKeyboard(synthDefName);
+			}
 		}
 	}
 
@@ -202,7 +203,7 @@ CVCenterKeyboard {
 		if (CVCenter.scv[keyboardDefName][synthDefName].isNil) {
 			CVCenter.scv[keyboardDefName].put(synthDefName, Array.newClear(128));
 		} {
-			"A keyboard named '%' has already been initialized".format(keyboardDefName).warn;
+			"Synth '%' already set for CVCenterKeyboard '%'".format(synthDefName, keyboardDefName).warn;
 		}
 	}
 
@@ -247,9 +248,8 @@ CVCenterKeyboard {
 		currentSynthDef = synthDefName;
 		this.free;
 		this.freeHangingNodes; // just in case...
-		CVCenter.scv.put(keyboardDefName, ());
-		CVCenter.scv[keyboardDefName].put(synthDefName, nil!128);
-		// this.updateKeyboard(synthDefName);
+		this.prEnvInit(synthDefName);
+		this.prInitKeyboard(synthDefName);
 	}
 
 	sample { |onOff|
