@@ -5,7 +5,7 @@ CVCenterKeyboard {
 	var <currentSynthDef, <wdgtNames, <outProxy;
 	var <sampler, sampling = false, sampleEvents, <pdef, cSample = 1;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
-	var <onFunc, <offFunc, <bendFunc; // 2 Events on/off funcs for each SynthDef. Must be added with SynthDef
+	var <onFunc, <offFunc, <bendFunc; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
 	var <select;
 	var <>debug = false;
 	var <mappedBusses;
@@ -84,8 +84,8 @@ CVCenterKeyboard {
 		^all[keyboardDefName]
 	}
 
-	*newSynthDef { |synthDefName, keyboardDefName=\keyboard, connectMidi = true|
-		var instance = this.new(keyboardDefName.asSymbol);
+	*newSynthDef { |synthDefName, keyboardDefName=\keyboard, addSampler=true, connectMidi=true|
+		var instance = this.new(keyboardDefName.asSymbol, addSampler);
 		synthDefName = synthDefName.asSymbol;
 		if (SynthDescLib.at(synthDefName).notNil) {
 			instance.synthDefNames.add(synthDefName);
@@ -269,9 +269,9 @@ CVCenterKeyboard {
 		currentSynthDef = synthDefName;
 		this.prEnvInit(synthDefName);
 		this.prInitKeyboard(synthDefName);
-		this.on.func.addFunc(onFunc[synthDefName]);
-		this.off.func.addFunc(offFunc[synthDefName]);
-		this.bend.func.addFunc(bendFunc[synthDefName]);
+		this.on.add(onFunc[synthDefName]);
+		this.off.add(offFunc[synthDefName]);
+		this.bend.add(bendFunc[synthDefName]);
 	}
 
 	sample { |onOff|
@@ -365,8 +365,8 @@ CVCenterKeyboard {
 
 		offFunc.put(synthDefName, { |veloc, num, chan, src|
 			if (this.debug) {
-				"\noff['%']\n\tsynthDefName: '%' \n\tnum: %".format(keyboardDefName, synthDefName, num)
-			}.postln;
+				"\noff['%']\n\tsynthDefName: '%' \n\tnum: %".format(keyboardDefName, synthDefName, num).postln
+			};
 			if (synthParams[synthDefName].srcID.isNil or: {
 				synthParams[synthDefName].srcID.notNil and: {
 					synthParams[synthDefName].srcID == src
@@ -378,7 +378,9 @@ CVCenterKeyboard {
 		});
 
 		bendFunc.put(synthDefName, { |bendVal, chan, src|
-			if (this.debug) { "bend['%']['%']: %\n".postf(keyboardDefName, synthDefName, bendVal) };
+			if (this.debug) {
+				"\nbend['%']['%']: %\n".postf(keyboardDefName, synthDefName, bendVal).postln
+			};
 			if (synthParams[synthDefName].srcID.isNil or: {
 				synthParams[synthDefName].srcID.notNil and: {
 					synthParams[synthDefName].srcID == src
@@ -435,9 +437,9 @@ CVCenterKeyboard {
 		} {
 			synthDefName = currentSynthDef;
 		};
-		onFunc[synthDefName] !? { on.func.removeFunc(onFunc[synthDefName]) };
-		offFunc[synthDefName] !? { off.func.removeFunc(offFunc[synthDefName]) };
-		bendFunc[synthDefName] !? { bend.func.removeFunc(bendFunc[synthDefName]) };
+		onFunc[synthDefName] !? { on.remove(onFunc[synthDefName]) };
+		offFunc[synthDefName] !? { off.remove(offFunc[synthDefName]) };
+		bendFunc[synthDefName] !? { bend.remove(bendFunc[synthDefName]) };
 		CVCenter.scv[keyboardDefName][synthDefName].do(_.release);
 		CVCenter.scv[keyboardDefName].removeAt(synthDefName);
 		CVCenter.scv.removeAt(keyboardDefName);
