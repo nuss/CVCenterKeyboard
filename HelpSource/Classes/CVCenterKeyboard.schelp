@@ -111,6 +111,59 @@ Optional - a link::Classes/Symbol:: or link::Classes/String:: denoting the tab i
 argument:: setSynthDef
 A link::Classes/Boolean::. If set to code::true:: the CVCenterKeyboard instance can be played using the given link::Classes/SynthDef:: immediately (otherwise you will have to call link::-setSynthDef:: explicitly). Default: code::false::.
 
+DISCUSSION::
+
+code::
+// define SynthDef with a gated envelope
+(
+SynthDef(\multi, {
+    var env = EnvGen.ar(
+		Env.adsr(\atk.kr(0.01), \dec.kr(0.3), \sust.kr(0.5), \rel.kr(0.7)),
+		\gate.kr(1), // we need a gated envelope!
+		doneAction: Done.freeSelf // free the Synth when done
+	);
+	var freq = \freq.kr(220);
+	var son = [SinOsc.ar(freq), Saw.ar(freq), Pulse.ar(freq)];
+	var which = SelectX.ar(\which.kr(0!2) * son.size, son); // stereo select
+	Out.ar(\out.kr(0), which * \veloc.kr(1) * \amp.kr(0.5) * env);
+}).add
+)
+
+// a few specs for the controls
+// specs with the same name as the regarding control
+// will automatically be assigned to the control in CVCenter
+(
+Spec.add(\atk, #[0.01, 1.0], \exp);
+Spec.add(\dec, #[0.1, 2.0]);
+Spec.add(\sust, #[0.1, 1.0]);
+Spec.add(\rel, #[0.1, 2.0, \exp]);
+Spec.add(\which, #[0, 2]);
+)
+
+// create new keyboard, using pre-defined SynthDef
+// will initialize MIDI and open CVCenter
+~kb = CVCenterKeyboard.newSynthDef(\multi, \myKeyboard);
+
+// set up controls and add CVWidgets for Synth controls
+// this will boot the server and open a dialog for setting specs
+// you will hear a short tone generated from a Synth instance of
+// the given SynthDef which is needed by CVCenter to determine
+// the Synth controls
+(
+~kb.setUpControls(
+	\multi, // the SynthDef
+    \kb, // a prefix for CVCenter, should make shure the resulting widgets have a unique names
+    \freq, // the pitch argument, to be controlled through the MIDI keyboard keys
+    \veloc, // the velocity argument
+    \freq, // the bend argument - will often be the same as the pitch argument
+    \out, // the argument setting the out bus
+	setSynthDef: true // start keyboard using the given SynthDef immediately
+)
+)
+
+// play some notes on your keyboard...
+::
+
 METHOD:: setSynthDef
 
 argument:: synthDefName
