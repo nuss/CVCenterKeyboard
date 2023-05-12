@@ -1,8 +1,8 @@
 CVCenterKeyboard {
 	classvar <all;
-	var <keyboardDefName, <synthDefNames, <synthParams, <wdgtName;
+	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName;
 	var <>bendSpec, <>out, <server, <group;
-	var <currentSynthDef, <wdgtNames, <outProxy;
+	var <currentSynthDef, wdgtNames, <outProxy;
 	var <sampler, sampling = false, sampleEvents, <pdef, cSample = 1;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFunc, <offFunc, <bendFunc; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
