@@ -165,7 +165,7 @@ Spec.add(\which, #[0, 2]);
 ::
 
 METHOD:: setSynthDef
-This method may be called strong::emphasis::implicitly:::: for every new link::Classes/SynthDef:: in link::-setUpControls:: by adding an argument code::setSynthDef:: set to code::true:: or it may be called strong::emphasis::explicitly:::: to switch between currently stored SynthDefs within the CVCenterKeyboard instance.
+This method may be called emphasis::implicitly:: for every new link::Classes/SynthDef:: in link::-setUpControls:: by adding an argument code::setSynthDef:: set to code::true:: or it may be called emphasis::explicitly:: to switch between currently stored SynthDefs within the CVCenterKeyboard instance.
 
 argument:: synthDefName
 A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be selected.
@@ -180,20 +180,51 @@ Remove a link::Classes/SynthDef:: from the CVCenterKEyboard instance. You will n
 argument:: synthDefName
 A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be removed.
 
-METHOD:: wdgtName
+METHOD:: freeHangingNodes
+Frees all currently playing link::Classes/Node::s (link::Classes/Synth:: instances) on the link::Classes/Server:: belonging to the CVCenterKeyboard instance. This can be useful if, for some reason, a note "hangs" after releasing a key on the keyboard which could happen e.g. if the server is under heavy load. A CVCenterKeyboard instance will create all its link::Classes/Synth::s in a dedicated link::Classes/Group:: (respectively link::Classes/ParGroup:: if supernova is used as audio engine) which allows control the playing nodes via the group interface.
 
-METHOD:: off
+SECTION:: MIDI related Instance variables
 
 METHOD:: on
+The default link::Classes/MIDIFunc#*noteOn#noteOn:: function, added when creating a new CVCenterKeyboard instance. By default the function will only hold some debug code that gets executed when link::-debug:: is set to code::true::.
+
+METHOD:: off
+The default link::Classes/MIDIFunc#*noteOff#noteOff:: function, added when creating a new CVCenterKeyboard instance. By default the function will only hold some debug code that gets executed when link::-debug:: is set to code::true::.
+
+METHOD:: bend
+The default link::Classes/MIDIFunc#*bend#bend:: function, added when creating a new CVCenterKeyboard instance. By default the function will only hold some debug code that gets executed when link::-debug:: is set to code::true::.
+
+SUBSECTION:: MIDIFunc storage for added SynthDefs
+
+The following three variables all implement an link::Classes/Event::, holding the individual code::noteOn::, code::noteOff:: and code::bend:: link::Classes/Function::s at a key identical to the corresponding link::Classes/SynthDef::. When calling link::Classes/MIDIFunc:: instance when calling link::#-setSynthDef#setSynthDef(\mySynthDef):: the corresponding Function in the Event will be link::Classes/AbstractResponderFunc#-add#added:: to the CVCenterKeyboard instance's default link::Classes/MIDIFunc:: instance (link::#-on::, link::#-off:: or link::#-bend::).
+
+METHOD:: onFuncs
+The functions to be executed for a code::noteOn::. To each of these functions the arguments code::veloc:: (velocity), code::num:: (the MIDI value for the key played on the keyboard), code::chan:: (the MIDI channel, if defined) and code::src:: (the MIDI device' unique ID, if defined) will be passed. If link::-debug:: has been set to code::true:: the following output will be posted:
+LIST::
+## The name of the CVCenterKeyboard instance (link::-keyboardDefName::)
+## The current link::Classes/SynthDef::'s name (as stored within link::-synthDefNames::)
+## The MIDI value (code::num::) of the currently played key
+## The MIDI channel (code::chan::)
+## The unique ID of the MIDI device (code::src::)
+## The names and current values of strong::all:: controls within the current link::Classes/SynthDef:: (respectively link::Classes/Synth:: instanced with the current keystroke)
+::
+
+METHOD:: offFuncs
+The functions to be executed for a code::noteOff::. To each of these functions the arguments code::veloc:: (velocity), code::num:: (the MIDI value for the key played on the keyboard), code::chan:: (the MIDI channel, if defined) and code::src:: (the MIDI device' unique ID, if defined) will be passed. If link::-debug:: has been set to code::true:: the following output will be posted:
+LIST::
+## The name of the CVCenterKeyboard instance (link::-keyboardDefName::)
+## The current link::Classes/SynthDef::'s name (as stored within link::-synthDefNames::)
+## The MIDI value (code::num::) of the currently played key
+## The MIDI channel (code::chan::)
+## The unique ID of the MIDI device (code::src::)
+::
+
+METHOD:: bendFuncs
 
 METHOD:: synthParams
 
 METHOD:: unmapBus
 argument:: ctrlname
-
-METHOD:: pdef
-
-METHOD:: onFunc
 
 METHOD:: sampler
 
@@ -213,8 +244,6 @@ METHOD:: namesCVs
 
 METHOD:: addSampler
 
-METHOD:: offFunc
-
 METHOD:: debug
 
 METHOD:: out
@@ -224,8 +253,6 @@ argument:: synthDefName
 argument:: outbus
 
 METHOD:: bendSpec
-
-METHOD:: bend
 
 METHOD:: currentSynthDef
 
@@ -240,11 +267,7 @@ METHOD:: valuePairs
 METHOD:: removeSynthDef
 argument:: synthDefName
 
-METHOD:: freeHangingNodes
-
 METHOD:: group
-
-METHOD:: wdgtNames
 
 METHOD:: keyboardDefName
 
@@ -254,8 +277,6 @@ METHOD:: sample
 argument:: onOff
 
 METHOD:: synthDefNames
-
-METHOD:: bendFunc
 
 METHOD:: select
 
@@ -274,4 +295,4 @@ code::
 _some_example_code_
 ::
 
-PRIVATE:: initClass, prAddWidgetActionsForKeyboard, prEnvInit, prInitCVs, prInitSynthDef, prInitKeyboard
+PRIVATE:: init, initClass, prAddWidgetActionsForKeyboard, prEnvInit, prInitCVs, prInitSynthDef, prInitKeyboard
