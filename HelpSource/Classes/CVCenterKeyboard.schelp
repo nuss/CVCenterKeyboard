@@ -165,17 +165,26 @@ Spec.add(\which, #[0, 2]);
 ::
 
 METHOD:: setSynthDef
+This method may be called strong::emphasis::implicitly:::: for every new link::Classes/SynthDef:: in link::-setUpControls:: by adding an argument code::setSynthDef:: set to code::true:: or it may be called strong::emphasis::explicitly:::: to switch between currently stored SynthDefs within the CVCenterKeyboard instance.
 
 argument:: synthDefName
+A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be selected.
+
+METHOD:: clear
+Clear link::Classes/SynthDef:: from a CVCenterKeyboard instance but don't remove it from the keyboard. This is used internally by link::-setSynthDef:: before switching to a new SynthDef. You will usually not call this method directly.
+argument:: synthDefName
+A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be cleared.
+
+METHOD:: free
+Remove a link::Classes/SynthDef:: from the CVCenterKEyboard instance. You will not be able to select and play the SynthDef anymore afterwards unless you re-add it to the CVCenterKeyboard instance.
+argument:: synthDefName
+A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be removed.
 
 METHOD:: wdgtName
 
 METHOD:: off
 
 METHOD:: on
-
-METHOD:: free
-argument:: synthDefName
 
 METHOD:: synthParams
 
@@ -191,9 +200,6 @@ METHOD:: sampler
 METHOD:: mapBus
 argument:: ctrlname
 argument:: bus
-
-METHOD:: clear
-argument:: synthDefName
 
 METHOD:: createSelect
 argument:: tab
