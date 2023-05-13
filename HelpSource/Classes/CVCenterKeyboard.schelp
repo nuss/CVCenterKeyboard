@@ -14,7 +14,7 @@ SynthDescLib.at(yourSynthDefName).hasGate;
 
 Beyond the just explained procedure you may add an arbitrary number of other SynthDefs. You may switch between these SynthDefs by calling link::#-setSynthDef::. Playing the keyboard should immediately play generated nodes using the selected SynthDef.
 
-Setting up the keyboard basically involves two steps: First instantiating a keyboard (through link::#-new:: or link::#-newSynthDef::) and then setting up the keyboard for a given SynthDef through link::#-setUpControls:: (will start the Server).
+Setting up the keyboard basically involves two steps: First instantiating a keyboard (through link::#*new:: or link::#*newSynthDef::) and then setting up the keyboard for a given SynthDef through link::#-setUpControls:: (will start the Server).
 
 You can assign four arbitray controls from your SynthDef to the following standard parameters:
 
@@ -52,7 +52,7 @@ MIDIClient.sources.do { |source| [source, source.uid].postln };
 argument:: chan
 Optional - an link::Classes/Integer:: denoting the MIDI channel the keyboard should use. If omitted the keyboard can be played on any MIDI channel (See also: link::Guides/UsingMIDI#MIDIFunc and MIDIdef: Filtering based on device or message data::)
 argument:: addSampler
-Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::-sample::. Calling link::-sample:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardSampler:: for more information on the recording mechanism and the structure of the recorded sequences.
+Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::#-sample::. Calling link::#-sample:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardSampler:: for more information on the recording mechanism and the structure of the recorded sequences.
 
 METHOD:: newSynthDef
 Instantiate a new CVCenterKeyboard holding the SynthDef denoted by code::synthDefName::. The SynthDef must have beem compiled in advance.
@@ -61,12 +61,12 @@ A link::Classes/Symbol:: or a link::Classes/String:: denoting the link::Classes/
 argument:: keyboardDefName
 a link::Classes/String:: or link::Classes/Symbol::, denoting the name of the new keyboard
 argument:: srcID
-Optional - an link::Classes/Integer:: corresponding to the unique ID of the MIDI device. If omitted the keyboard will be usable on any currently connected MIDI keyboard. See link::#-new:: for how to determine the unique ID of your MIDI device.
+Optional - an link::Classes/Integer:: corresponding to the unique ID of the MIDI device. If omitted the keyboard will be usable on any currently connected MIDI keyboard. See link::#*new:: for how to determine the unique ID of your MIDI device.
 (See also: link::Guides/UsingMIDI#MIDIFunc and MIDIdef: Filtering based on device or message data::)
 argument:: chan
 Optional - an link::Classes/Integer:: denoting the MIDI channel the keyboard should use. If omitted the keyboard can be played on any MIDI channel (See also: link::Guides/UsingMIDI#MIDIFunc and MIDIdef: Filtering based on device or message data::)
 argument:: addSampler
-Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::-sample::. Calling link::-sample:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardSampler:: for more information on the recording mechanism and the structure of the recorded sequences.
+Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::#-sample::. Calling link::#-sample:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardSampler:: for more information on the recording mechanism and the structure of the recorded sequences.
 
 METHOD:: at
 A simple convenience method, same as code::CVCenterKeyboard.all[keyboardDefName]:: except for the fact that code::keyboardDefName:: can be given as link::Classes/String:: as well (will be converted to a link::Classes/Symbol:: internally).
@@ -85,7 +85,7 @@ argument:: synthDefName
 A link::Classes/String:: or an link::Classes/Symbol::, denoting the name of the SynthDef.
 
 METHOD:: setUpControls
-Whenever a new SynthDef is added, either by creating a new instance by calling code::CVCenter.Keyboard.newSynthDef:: or adding a SynthDef with link::-addSynthDef::, the CVCenterKeyboard instance must be set up for the new SynthDef. This will configure code::outControl::, code::keyboardControl:: and code::bendControl:: as well as it will create link::Classes/CVWidget::s for all other controls in the SynthDef.
+Whenever a new SynthDef is added, either by creating a new instance by calling code::CVCenter.Keyboard.newSynthDef:: or adding a SynthDef with link::#-addSynthDef::, the CVCenterKeyboard instance must be set up for the new SynthDef. This will configure code::outControl::, code::keyboardControl:: and code::bendControl:: as well as it will create link::Classes/CVWidget::s for all other controls in the SynthDef.
 argument:: synthDefName
 The link::Classes/SynthDef::'s name, given as link::Classes/Symbol:: or link::Classes/String::
 argument:: prefix
@@ -109,7 +109,7 @@ When link::Classes/CVWidget::s are created from a running code::Classes/Synth:: 
 argument:: tab
 Optional - a link::Classes/Symbol:: or link::Classes/String:: denoting the tab in which the link::Classes/CVWidget::s for the link::Classes/Synth:: instances will appear. If none is given the tab name will default the the SynthDef's name.
 argument:: setSynthDef
-A link::Classes/Boolean::. If set to code::true:: the CVCenterKeyboard instance can be played using the given link::Classes/SynthDef:: immediately (otherwise you will have to call link::-setSynthDef:: explicitly). Default: code::false::.
+A link::Classes/Boolean::. If set to code::true:: the CVCenterKeyboard instance can be played using the given link::Classes/SynthDef:: immediately (otherwise you will have to call link::#-setSynthDef:: explicitly). Default: code::false::.
 
 DISCUSSION::
 
@@ -165,13 +165,13 @@ Spec.add(\which, #[0, 2]);
 ::
 
 METHOD:: setSynthDef
-This method may be called emphasis::implicitly:: for every new link::Classes/SynthDef:: in link::-setUpControls:: by adding an argument code::setSynthDef:: set to code::true:: or it may be called emphasis::explicitly:: to switch between currently stored SynthDefs within the CVCenterKeyboard instance.
+This method may be called emphasis::implicitly:: for every new link::Classes/SynthDef:: in link::#-setUpControls:: by adding an argument code::setSynthDef:: set to code::true:: or it may be called emphasis::explicitly:: to switch between currently stored SynthDefs within the CVCenterKeyboard instance.
 
 argument:: synthDefName
 A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be selected.
 
 METHOD:: clear
-Clear link::Classes/SynthDef:: from a CVCenterKeyboard instance but don't remove it from the keyboard. This is used internally by link::-setSynthDef:: before switching to a new SynthDef. You will usually not call this method directly.
+Clear link::Classes/SynthDef:: from a CVCenterKeyboard instance but don't remove it from the keyboard. This is used internally by link::#-setSynthDef:: before switching to a new SynthDef. You will usually not call this method directly.
 argument:: synthDefName
 A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be cleared.
 
@@ -183,26 +183,26 @@ A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes
 METHOD:: freeHangingNodes
 Frees all currently playing link::Classes/Node::s (link::Classes/Synth:: instances) on the link::Classes/Server:: belonging to the CVCenterKeyboard instance. This can be useful if, for some reason, a note "hangs" after releasing a key on the keyboard which could happen e.g. if the server is under heavy load. A CVCenterKeyboard instance will create all its link::Classes/Synth::s in a dedicated link::Classes/Group:: (respectively link::Classes/ParGroup:: if supernova is used as audio engine) which allows control the playing nodes via the group interface.
 
-SECTION:: MIDI related Instance variables
+SUBSECTION:: MIDI related Instance variables
 
 METHOD:: on
-The default link::Classes/MIDIFunc#*noteOn#noteOn:: function, added when creating a new CVCenterKeyboard instance. By default the function will only hold some debug code that gets executed when link::-debug:: is set to code::true::.
+The default link::Classes/MIDIFunc#*noteOn#noteOn:: function, added when creating a new CVCenterKeyboard instance. By default the function will only hold some debug code that gets executed when link::#-debug:: is set to code::true::.
 
 METHOD:: off
-The default link::Classes/MIDIFunc#*noteOff#noteOff:: function, added when creating a new CVCenterKeyboard instance. By default the function will only hold some debug code that gets executed when link::-debug:: is set to code::true::.
+The default link::Classes/MIDIFunc#*noteOff#noteOff:: function, added when creating a new CVCenterKeyboard instance. By default the function will only hold some debug code that gets executed when link::#-debug:: is set to code::true::.
 
 METHOD:: bend
-The default link::Classes/MIDIFunc#*bend#bend:: function, added when creating a new CVCenterKeyboard instance. By default the function will only hold some debug code that gets executed when link::-debug:: is set to code::true::.
+The default link::Classes/MIDIFunc#*bend#bend:: function, added when creating a new CVCenterKeyboard instance. By default the function will only hold some debug code that gets executed when link::#-debug:: is set to code::true::.
 
 SUBSECTION:: MIDIFunc storage for added SynthDefs
 
 The following three variables all implement an link::Classes/Event::, holding the individual code::noteOn::, code::noteOff:: and code::bend:: link::Classes/Function::s at a key identical to the corresponding link::Classes/SynthDef::. When calling link::Classes/MIDIFunc:: instance when calling link::#-setSynthDef#setSynthDef(\mySynthDef):: the corresponding Function in the Event will be link::Classes/AbstractResponderFunc#-add#added:: to the CVCenterKeyboard instance's default link::Classes/MIDIFunc:: instance (link::#-on::, link::#-off:: or link::#-bend::).
 
 METHOD:: onFuncs
-The functions to be executed for a code::noteOn::. To each of these functions the arguments code::veloc:: (velocity), code::num:: (the MIDI value for the key played on the keyboard), code::chan:: (the MIDI channel, if defined) and code::src:: (the MIDI device' unique ID, if defined) will be passed. If link::-debug:: has been set to code::true:: the following output will be posted:
+The functions to be executed for a code::noteOn::. To each of these functions the arguments code::veloc:: (velocity), code::num:: (the MIDI value for the key played on the keyboard), code::chan:: (the MIDI channel, if defined) and code::src:: (the MIDI device' unique ID, if defined) will be passed. If link::#-debug:: has been set to code::true:: the following output will be posted:
 LIST::
-## The name of the CVCenterKeyboard instance (link::-keyboardDefName::)
-## The current link::Classes/SynthDef::'s name (as stored within link::-synthDefNames::)
+## The name of the CVCenterKeyboard instance (link::#-keyboardDefName::)
+## The current link::Classes/SynthDef::'s name (as stored within link::#-synthDefNames::)
 ## The MIDI value (code::num::) of the currently played key
 ## The MIDI channel (code::chan::)
 ## The unique ID of the MIDI device (code::src::)
@@ -210,16 +210,41 @@ LIST::
 ::
 
 METHOD:: offFuncs
-The functions to be executed for a code::noteOff::. To each of these functions the arguments code::veloc:: (velocity), code::num:: (the MIDI value for the key played on the keyboard), code::chan:: (the MIDI channel, if defined) and code::src:: (the MIDI device' unique ID, if defined) will be passed. If link::-debug:: has been set to code::true:: the following output will be posted:
+The functions to be executed for a code::noteOff::. To each of these functions the arguments code::veloc:: (velocity), code::num:: (the MIDI value for the key played on the keyboard), code::chan:: (the MIDI channel, if defined) and code::src:: (the MIDI device' unique ID, if defined) will be passed. If link::#-debug:: has been set to code::true:: the following output will be posted:
 LIST::
-## The name of the CVCenterKeyboard instance (link::-keyboardDefName::)
-## The current link::Classes/SynthDef::'s name (as stored within link::-synthDefNames::)
+## The name of the CVCenterKeyboard instance (link::#-keyboardDefName::)
+## The current link::Classes/SynthDef::'s name (as stored within link::#-synthDefNames::)
 ## The MIDI value (code::num::) of the currently played key
 ## The MIDI channel (code::chan::)
 ## The unique ID of the MIDI device (code::src::)
 ::
 
 METHOD:: bendFuncs
+The functions to be executed for a code::bend:: (when moving the the bend wheel). To each of these functions the arguments code::bendVal:: (the value coming from the bend wheel), code::chan:: (the MIDI channel, if defined) and code::src:: (the MIDI device' unique ID, if defined) will be passed. If link::#-debug:: has been set to code::true:: the following output will be posted:
+LIST::
+## The name of the CVCenterKeyboard instance (link::#-keyboardDefName::)
+## The current link::Classes/SynthDef::'s name (as stored within link::#-synthDefNames::)
+## The MIDI value (code::bend::) coming from the bend wheel
+## The MIDI channel (code::chan::)
+## The unique ID of the MIDI device (code::src::)
+::
+
+SUBSECTION:: Instance variables
+
+METHOD:: debug
+Acttivate or deactivate debugging. If set to code::true:: various output from code::noteOn::, code::noteOff:: and code::bend:: events will be posted.
+
+METHOD:: currentSynthDef
+returns:: The name of the currently used SynthDef link::Classes/Symbol::.
+
+METHOD:: synthDefNames
+returns:: A link::Classes/List::, filled with the names of the SynthDefs currently stored with the CVCenterKeyboard instance.
+
+METHOD:: bendSpec
+Set or get the link::Classes/ControlSpec:: for the pitch bend wheel. By default:
+code::
+ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz")
+::
 
 METHOD:: synthParams
 
@@ -235,26 +260,15 @@ argument:: bus
 METHOD:: createSelect
 argument:: tab
 
-METHOD:: init
-argument:: srcID
-argument:: chan
-argument:: addSampler
-
 METHOD:: namesCVs
 
 METHOD:: addSampler
-
-METHOD:: debug
 
 METHOD:: out
 
 METHOD:: removeOutProxy
 argument:: synthDefName
 argument:: outbus
-
-METHOD:: bendSpec
-
-METHOD:: currentSynthDef
 
 METHOD:: pairs
 
@@ -276,8 +290,6 @@ METHOD:: mappedBusses
 METHOD:: sample
 argument:: onOff
 
-METHOD:: synthDefNames
-
 METHOD:: select
 
 METHOD:: addOutProxy
@@ -288,7 +300,6 @@ argument:: transbus
 argument:: outbus
 argument:: play
 
-
 EXAMPLES::
 
 code::
@@ -296,3 +307,4 @@ _some_example_code_
 ::
 
 PRIVATE:: init, initClass, prAddWidgetActionsForKeyboard, prEnvInit, prInitCVs, prInitSynthDef, prInitKeyboard
+
