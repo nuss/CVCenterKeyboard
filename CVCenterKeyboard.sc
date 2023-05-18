@@ -283,10 +283,10 @@ CVCenterKeyboard {
 		}
 	}
 
-	createSelect { |tab|
-		select = CVCenterKeyboardSelect(this, tab);
-		^select.front;
-	}
+	// createSelect { |tab|
+	// 	select = CVCenterKeyboardSelect(this, tab);
+	// 	^select.front;
+	// }
 
 	// private
 	prInitCVs { |synthDefName, args|
@@ -376,13 +376,8 @@ CVCenterKeyboard {
 		});
 	}
 
-	addOutProxy { |synthDefName, numChannels=2, useNdef=false, transbus, outbus, play=true|
+	addOutProxy { |numChannels=2, useNdef=false, transbus, outbus, play=true|
 		var proxyName;
-		if (synthDefName.notNil) {
-			synthDefName = synthDefName.asSymbol;
-		} {
-			synthDefName = currentSynthDef;
-		};
 		proxyName = (keyboardDefName ++ "Out").asSymbol;
 		if (useNdef.not) {
 			outProxy = NodeProxy.audio(server, numChannels);
@@ -404,14 +399,10 @@ CVCenterKeyboard {
 		}
 	}
 
-	removeOutProxy { |synthDefName, outbus|
-		if (synthDefName.notNil) {
-			synthDefName = synthDefName.asSymbol;
-		} {
-			synthDefName = currentSynthDef;
-		};
+	removeOutProxy { |outbus|
 		outbus !? { this.out_(outbus) };
 		outProxy.clear;
+		outProxy = nil;
 	}
 
 	clear { |synthDefName|
@@ -428,20 +419,17 @@ CVCenterKeyboard {
 		CVCenter.scv.removeAt(keyboardDefName);
 	}
 
-	free { |synthDefName|
-		if (synthDefName.notNil) {
-			synthDefName = synthDefName.asSymbol;
-		} {
-			synthDefName = currentSynthDef;
-		};
+	free {
+		onFuncs.do(on.remove(_));
+		offFuncs.do(off.remove(_));
+		bendFuncs.do(bend.remove(_));
 		on !? { on.free };
 		off !? { off.free };
 		bend !? { bend.free };
-		// FIXME: does this really release *all* Synths?
-		CVCenter.scv[keyboardDefName][synthDefName].do(_.release);
-		CVCenter.scv[keyboardDefName].removeAt(synthDefName);
+		CVCenter.scv[keyboardDefName][currentSynthDef].do(_.release);
 		CVCenter.scv.removeAt(keyboardDefName);
 	}
+
 	// add the sequencer, fed through sampling keyboard strokes
 	addSampler {
 		if (sampler.isNil) {
