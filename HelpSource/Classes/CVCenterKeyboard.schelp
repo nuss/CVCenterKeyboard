@@ -40,7 +40,7 @@ CLASSMETHODS::
 
 METHOD:: new
 Instanciate a new keyboard under code::keyboardName::. The keyboard will be accessible under code::CVCenterKeyboard.all[keyboardName]::
-argument:: keyboardName
+argument:: keyboardDefName
 a link::Classes/String:: or link::Classes/Symbol::, denoting the name of the new keyboard
 argument:: srcID
 Optional - an link::Classes/Integer:: corresponding to the unique ID of the MIDI device. If omitted the keyboard will be usable on any currently connected MIDI keyboard. To find out the unique numeric ID of your MIDI device you could use thefollowing code:
@@ -81,6 +81,11 @@ INSTANCEMETHODS::
 
 METHOD:: addSynthDef
 Add a new link::Classes/SynthDef:: to an existing CVCenterKeyboard instance. The SynthDef must already have been compiled and contain a gated envelope.
+argument:: synthDefName
+A link::Classes/String:: or an link::Classes/Symbol::, denoting the name of the SynthDef.
+
+METHOD:: removeSynthDef
+Remove a link::Classes/SynthDef:: to an existing CVCenterKeyboard instance.
 argument:: synthDefName
 A link::Classes/String:: or an link::Classes/Symbol::, denoting the name of the SynthDef.
 
@@ -170,18 +175,60 @@ This method may be called emphasis::implicitly:: for every new link::Classes/Syn
 argument:: synthDefName
 A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be selected.
 
+DISCUSSION::
+code::
+// define another SynthDef
+(
+SynthDef(\syncSaw, {
+	var sig, env;
+    env = EnvGen.kr(Env.adsr(
+		\atk.kr(0.03),
+		\dec.kr(0.5),
+		\sust.kr(0.5),
+		\rel.kr(0.7)
+	), \gate.kr(1), doneAction: Done.freeSelf);
+	sig = SyncSaw.ar(
+		\freq.kr(220),
+		\sawFreq.ar(220!2, spec: \midfreq.asSpec) // specs can also be set implicitly
+	);
+	Out.ar(\out.kr(0), sig * env * \veloc.kr(1) * \amp.kr(0.5) * env)
+}).add;
+)
+
+// add the SynthDef to the CVCenterKeyboard instance
+~kb.addSynthDef(\multi);
+
+// set up controls
+(
+~kb.setUpControls(
+	\syncSaw, // the SynthDef name
+	\ss, // prefix in CVCenter
+	\freq, // control played by the keyboard
+	\veloc, // velocity argument
+	\freq, // bend argument
+	\out // out bus
+)
+)
+
+// switch to the just added new SynthDef
+~kb.setSynthDef(\syncSaw)
+
+// play...
+
+// switch back to the other SynthDef
+~kb.setSynthDef(\multi)
+::
+
 METHOD:: clear
 Clear link::Classes/SynthDef:: from a CVCenterKeyboard instance but don't remove it from the keyboard. This is used internally by link::#-setSynthDef:: before switching to a new SynthDef. You will usually not call this method directly.
 argument:: synthDefName
 A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be cleared.
 
 METHOD:: free
-Remove a link::Classes/SynthDef:: from the CVCenterKEyboard instance. You will not be able to select and play the SynthDef anymore afterwards unless you re-add it to the CVCenterKeyboard instance.
-argument:: synthDefName
-A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be removed.
+Free the CVCenterKeyboard instance. You will not be able to play the keyboard any longer after calling this method.
 
 METHOD:: freeHangingNodes
-Frees all currently playing link::Classes/Node::s (link::Classes/Synth:: instances) on the link::Classes/Server:: belonging to the CVCenterKeyboard instance. This can be useful if, for some reason, a note "hangs" after releasing a key on the keyboard which could happen e.g. if the server is under heavy load. A CVCenterKeyboard instance will create all its link::Classes/Synth::s in a dedicated link::Classes/Group:: (respectively link::Classes/ParGroup:: if supernova is used as audio engine) which allows control the playing nodes via the group interface.
+Frees all currently playing link::Classes/Node::s (link::Classes/Synth:: instances) on the link::Classes/Server:: belonging to the CVCenterKeyboard instance. This can be useful if, for some reason, a note "hangs" after releasing a key on the keyboard which could happen e.g. if the server is under heavy load. A CVCenterKeyboard instance will create all its link::Classes/Synth::s in a dedicated link::Classes/Group:: (respectively link::Classes/ParGroup:: if supernova is used as audio engine) which allows control the playing nodes via the group's interface.
 
 SUBSECTION:: MIDI related Instance variables
 
@@ -237,8 +284,17 @@ Acttivate or deactivate debugging. If set to code::true:: various output from co
 METHOD:: currentSynthDef
 returns:: The name of the currently used SynthDef link::Classes/Symbol::.
 
+METHOD:: synthParams
+RETURNS:: An link::Classes/Event:: holding all link::Classes/ControlName::s of all currently stored link::Classes/SynthDef::s within a CVCenterKeyboard instance.
+
 METHOD:: synthDefNames
 returns:: A link::Classes/List::, filled with the names of the SynthDefs currently stored with the CVCenterKeyboard instance.
+
+METHOD:: keyboardDefName
+returns:: A link::Classes/Symbol:: representing the name of the CVCenterKeyboard instance. The name can will be set in link::#*new:: or link::#*newSynthDef::. If no name has been given it will default to code::\keyboard::.
+
+METHOD:: namesCVs
+RETURNS:: An link::Classes/Event::, holding a link::Classes/List:: with the link::Classes/CVWidget:: instance names, the link::Classes/ControlName::s and the link::Classes/CV::s of all link::Classes/SynthDef::s currently stored with the CVCenterKeyboard instance. Usually this will not be of any use for the user but it is needed for sampling keyboard sequences. However, this variable is kept public for introspection.
 
 METHOD:: bendSpec
 Set or get the link::Classes/ControlSpec:: for the pitch bend wheel. By default:
@@ -246,7 +302,35 @@ code::
 ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz")
 ::
 
-METHOD:: synthParams
+METHOD:: pairs
+RETURNS:: An link::Classes/Array:: containing all controls and link::Classes/CV:: instances of the currently used link::Classes/SynthDef:: (see: link::#-currentSynthDef::) that appear in link::Classes/CVCenter::.
+
+METHOD:: valuePairs
+returns:: An link::Classes/Array:: containing all controls and their current values of the  link::Classes/SynthDef:: (see: link::#-currentSynthDef::) that appear in link::Classes/CVCenter::.
+
+METHOD:: out
+Set or get the out link::Classes/Bus:: of the currently used link::Classes/SynthDef::.
+returns:: An link::Classes/Integer::.
+
+METHOD:: server
+returns:: The link::Classes/Server:: used by the CVCenterKeyboard instance.
+
+SUBSECTION:: Adding an effects chain
+Building an effects chain is accomplished by adding a link::Classes/NodeProxy:: or an link::Classes/Ndef:: catching the output of the link::Classes/Synth::s played with the keyboard. These can then be filtered by using link::Reference/NodeProxy_roles::. Only adding the NodeProxy or Ndef by calling link::#-addOutProxy:: will have no audible effect - the keyboard should just play as before adding the proxy.
+
+METHOD:: addOutProxy
+argument:: synthDefName
+argument:: numChannels
+argument:: useNdef
+argument:: transbus
+argument:: outbus
+argument:: play
+
+METHOD:: removeOutProxy
+argument:: synthDefName
+argument:: outbus
+
+METHOD:: outProxy
 
 METHOD:: unmapBus
 argument:: ctrlname
@@ -260,30 +344,9 @@ argument:: bus
 METHOD:: createSelect
 argument:: tab
 
-METHOD:: namesCVs
-
 METHOD:: addSampler
 
-METHOD:: out
-
-METHOD:: removeOutProxy
-argument:: synthDefName
-argument:: outbus
-
-METHOD:: pairs
-
-METHOD:: server
-
-METHOD:: outProxy
-
-METHOD:: valuePairs
-
-METHOD:: removeSynthDef
-argument:: synthDefName
-
 METHOD:: group
-
-METHOD:: keyboardDefName
 
 METHOD:: mappedBusses
 
@@ -291,14 +354,6 @@ METHOD:: sample
 argument:: onOff
 
 METHOD:: select
-
-METHOD:: addOutProxy
-argument:: synthDefName
-argument:: numChannels
-argument:: useNdef
-argument:: transbus
-argument:: outbus
-argument:: play
 
 EXAMPLES::
 
