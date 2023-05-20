@@ -376,7 +376,7 @@ CVCenterKeyboard {
 		});
 	}
 
-	addOutProxy { |numChannels=2, useNdef=false, transbus, outbus, play=true|
+	addOutProxy { |numChannels=2, useNdef=false, transbus, outbus|
 		var proxyName;
 		proxyName = (keyboardDefName ++ "Out").asSymbol;
 		if (useNdef.not) {
@@ -394,9 +394,7 @@ CVCenterKeyboard {
 		outProxy.source = {
 			In.ar(this.out, numChannels)
 		};
-		if (play) {
-			outProxy.play(outbus);
-		}
+		outProxy.play(outbus);
 	}
 
 	removeOutProxy { |outbus|
