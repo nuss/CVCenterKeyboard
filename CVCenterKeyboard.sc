@@ -6,7 +6,6 @@ CVCenterKeyboard {
 	var <sampler, sampling = false, sampleEvents;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFuncs, <offFuncs, <bendFuncs; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
-	var <select;
 	var <>debug = false;
 	var <mappedBusses;
 	// sequencer support;
@@ -16,17 +15,21 @@ CVCenterKeyboard {
 	*initClass {
 		StartUp.add {
 			Spec.add(\midiBend, ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz"));
-			all ?? { all = () };
+			all = ();
 		};
 	}
 
 	*new { |keyboardDefName=\keyboard, srcID, chan, addSampler=true|
+		all[keyboardDefName.asSymbol] !? {
+			"A CVCenterKeyboard instance at '%' already exists. Please choose a different name!".error;
+			^nil;
+		}
 		^super.newCopyArgs(keyboardDefName.asSymbol).init(srcID, chan, addSampler);
 	}
 
 	init { |srcID, chan, addSampler|
 		\CVCenter.asClass ?? {
-			"CVCenterKeyboard depends on CVCenter to be installed. Please install CVCenter before creating a new CVCenterKeyboard instance.".error;
+			"CVCenterKeyboard depends on CVCenter to be installed. Please install CVCenter before creating a new CVCenterKeyboard instance!".error;
 			^nil;
 		};
 		all.put(keyboardDefName, this);
@@ -433,7 +436,7 @@ CVCenterKeyboard {
 		if (sampler.isNil) {
 			sampler = CVCenterKeyboardSampler(keyboardDefName);
 		} {
-			"The given keyboard '%' has already an assigned sampler.".format(keyboardDefName).error;
+			"The given keyboard '%' has already a sampler assigned.".format(keyboardDefName).error;
 		}
 	}
 
