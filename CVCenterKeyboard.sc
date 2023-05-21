@@ -429,6 +429,7 @@ CVCenterKeyboard {
 		bend !? { bend.free };
 		CVCenter.scv[keyboardDefName][currentSynthDef].do(_.release);
 		CVCenter.scv.removeAt(keyboardDefName);
+		all[keyboardDefName] = nil;
 	}
 
 	// add the sequencer, fed through sampling keyboard strokes
