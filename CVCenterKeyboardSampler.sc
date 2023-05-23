@@ -12,8 +12,8 @@ CVCenterKeyboardSampler {
 		all = ();
 	}
 
-	*new { |keyboard|
-		^super.newCopyArgs(keyboard).init;
+	*new { |keyboardDefName|
+		^super.newCopyArgs(CVCenterKeyboard.all[keyboardDefName]).init;
 	}
 
 	init {
