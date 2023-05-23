@@ -6,6 +6,7 @@ CVCenterKeyboardSampler {
 	var sampleStart, sampleEnd, onTimes, offTimes;
 	var sampleOnFunc, sampleOffFunc, sampleEvents;
 	var <pdef, cSample = 1;
+	var <>debug = false;
 
 	*initClass {
 		all = ();
@@ -24,7 +25,11 @@ CVCenterKeyboardSampler {
 		groups = List[];
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues;
+			var restTime;
 
+			keyboard.currentSynthDef ?? {
+				"CVCenterKeyboardSampler: No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
+			};
 			if (keyboard.synthParams.isNil) {
 				"No SynthDef initialized for keyboard yet. Call \"setUpControls\" on your CVCenterKeyboard instance first.".warn;
 			} {
@@ -43,6 +48,7 @@ CVCenterKeyboardSampler {
 					onTimes[num] = Main.elapsedTime;
 					argsValues.pairsDo { |k, v|
 						sampleEvents[num][k] ?? {
+							if (this.debug) { [k, v].postln };
 							sampleEvents[num].put(k, [])
 						};
 						if (v.size > 1) {
@@ -55,17 +61,23 @@ CVCenterKeyboardSampler {
 					sampleEvents[num].dur ?? {
 						sampleEvents[num].put(\dur, []);
 					};
-					sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(onTimes[num] - offTimes[num]));
+					sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(restTime = onTimes[num] - offTimes[num]));
+					if (this.debug) { "Rest time: %".format(restTime).postln };
 				}
 			}
 		};
 		sampleOffFunc = { |veloc, num, chan, src|
+			var onTime;
+			keyboard.currentSynthDef ?? {
+				"CVCenterKeyboardSampler: No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
+			};
 			if (isSampling) {
 				offTimes[num] = Main.elapsedTime;
 				sampleEvents[num].dur ?? {
 					sampleEvents[num].put(\dur, []);
 				};
-				sampleEvents[num].dur = sampleEvents[num].dur.add(offTimes[num] - onTimes[num]);
+				sampleEvents[num].dur = sampleEvents[num].dur.add(onTime = offTimes[num] - onTimes[num]);
+				if (this.debug) { "On time: %".format(onTime).postln };
 			}
 		};
 		keyboard.on.add(sampleOnFunc);
