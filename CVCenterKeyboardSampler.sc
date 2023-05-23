@@ -25,7 +25,7 @@ CVCenterKeyboardSampler {
 		groups = List[];
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues;
-			var restTime;
+			var offTime;
 
 			keyboard.currentSynthDef ?? {
 				"CVCenterKeyboardSampler: No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
@@ -61,8 +61,8 @@ CVCenterKeyboardSampler {
 					sampleEvents[num].dur ?? {
 						sampleEvents[num].put(\dur, []);
 					};
-					sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(restTime = onTimes[num] - offTimes[num]));
-					if (this.debug) { "Rest time: %".format(restTime).postln };
+					sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(offTime = onTimes[num] - offTimes[num]));
+					if (this.debug) { "Off time: %".format(offTime).postln };
 				}
 			}
 		};

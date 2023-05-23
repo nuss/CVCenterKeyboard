@@ -282,7 +282,7 @@ CVCenterKeyboard {
 		if (sampler.notNil) {
 			sampler.sample(onOff)
 		} {
-			"No CVCenterKeyboardSampler for the given CVCenterKeyboard exists! Create one by calling CVCenterKeyboardSampler(<myKeyboard>).".error
+			"No CVCenterKeyboardSampler instance for the given CVCenterKeyboard instance exists! Create one by calling 'addSampler' on the CVCenterKeyboard instance.".error
 		}
 	}
 
