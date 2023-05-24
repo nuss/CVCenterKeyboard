@@ -12,14 +12,20 @@ CVCenterKeyboardSampler {
 		all = ();
 	}
 
-	*new { |keyboardDefName|
-		^super.newCopyArgs(CVCenterKeyboard.all[keyboardDefName]).init;
+	*new { |keyboard|
+		^super.newCopyArgs(keyboard).init;
 	}
 
 	init {
 		keyboard ?? {
 			"No CVCenterKeyboard instance given!".error;
 			^nil
+		};
+		if (keyboard.class != CVCenterKeyboard) {
+			"The given keyboard doesn't appear to be a CVCenterKeyboard instance".error;
+			^nil
+		} {
+			keyboard.sampler = this;
 		};
 		all.put(keyboard.keyboardDefName, this);
 		groups = List[];

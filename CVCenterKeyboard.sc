@@ -3,7 +3,7 @@ CVCenterKeyboard {
 	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName;
 	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, wdgtNames, <outProxy;
-	var <sampler, sampling = false, sampleEvents;
+	var <>sampler, sampling = false, sampleEvents;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFuncs, <offFuncs, <bendFuncs; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
 	var <>debug = false;
@@ -59,7 +59,7 @@ CVCenterKeyboard {
 				\CVCenterKeyboardSampler.asClass.notNil
 			}
 		}) {
-			sampler = CVCenterKeyboardSampler(this)
+			CVCenterKeyboardSampler(this)
 		};
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
 	}
@@ -435,7 +435,7 @@ CVCenterKeyboard {
 	// add the sequencer, fed through sampling keyboard strokes
 	addSampler {
 		if (sampler.isNil) {
-			sampler = CVCenterKeyboardSampler(keyboardDefName);
+			CVCenterKeyboardSampler(this);
 		} {
 			"The given keyboard '%' has already a sampler assigned.".format(keyboardDefName).error;
 		}
