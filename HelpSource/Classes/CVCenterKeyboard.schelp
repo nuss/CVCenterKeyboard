@@ -181,7 +181,7 @@ code::
 (
 SynthDef(\syncSaw, {
 	var sig, env;
-    env = EnvGen.kr(Env.adsr(
+	env = EnvGen.kr(Env.adsr(
 		\atk.kr(0.03),
 		\dec.kr(0.5),
 		\sust.kr(0.5),
