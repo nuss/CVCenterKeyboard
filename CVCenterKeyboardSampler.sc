@@ -156,10 +156,8 @@ CVCenterKeyboardSampler {
 
 	clearSamples { |...indices|
 		if (indices.isEmpty) {
-			pdef.do { |p, i|
-				p.source.clear;
-				pdef.remove(p);
-			}
+			pdef.do { |p, i| p.source.clear };
+			pdef.removeAll;
 		} {
 			indices.do { |i|
 				pdef[i].source.clear;
