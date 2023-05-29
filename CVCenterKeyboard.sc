@@ -19,15 +19,15 @@ CVCenterKeyboard {
 		};
 	}
 
-	*new { |keyboardDefName=\keyboard, srcID, chan, addSampler=true|
+	*new { |keyboardDefName=\keyboard, srcID, chan, addSampler=true, touchOSC|
 		all[keyboardDefName.asSymbol] !? {
 			"A CVCenterKeyboard instance at '%' already exists. Please choose a different name!".error;
 			^nil;
 		}
-		^super.newCopyArgs(keyboardDefName.asSymbol).init(srcID, chan, addSampler);
+		^super.newCopyArgs(keyboardDefName.asSymbol).init(srcID, chan, addSampler, touchOSC);
 	}
 
-	init { |srcID, chan, addSampler|
+	init { |srcID, chan, addSampler, touchOSC|
 		\CVCenter.asClass ?? {
 			"CVCenterKeyboard depends on CVCenter to be installed. Please install CVCenter before creating a new CVCenterKeyboard instance!".error;
 			^nil;
@@ -59,7 +59,12 @@ CVCenterKeyboard {
 				\CVCenterKeyboardSampler.asClass.notNil
 			}
 		}) {
-			CVCenterKeyboardSampler(this)
+			CVCenterKeyboardSampler(this);
+			touchOSC !? {
+				if (touchOSC.class == NetAddr) {
+					this.sampler.touchOSC = TouchOSC(keyboardDefName, touchOSC);
+				}
+			}
 		};
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
 	}
@@ -91,8 +96,8 @@ CVCenterKeyboard {
 		^all[keyboardDefName.asSymbol]
 	}
 
-	*newSynthDef { |synthDefName, keyboardDefName=\keyboard, srcID, chan, addSampler=true|
-		var instance = this.new(keyboardDefName.asSymbol, srcID, chan, addSampler);
+	*newSynthDef { |synthDefName, keyboardDefName=\keyboard, srcID, chan, addSampler=true, touchOSC|
+		var instance = this.new(keyboardDefName.asSymbol, srcID, chan, addSampler, touchOSC);
 		synthDefName = synthDefName.asSymbol;
 		if (SynthDescLib.at(synthDefName).notNil) {
 			instance.synthDefNames.add(synthDefName);

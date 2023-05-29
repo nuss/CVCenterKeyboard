@@ -1,6 +1,7 @@
 CVCenterKeyboardSampler {
 	classvar <all;
 	var <keyboard;
+	var <>touchOSC;
 	var <groups;
 	var isSampling = false;
 	var sampleStart, sampleEnd, onTimes, offTimes;
@@ -12,8 +13,8 @@ CVCenterKeyboardSampler {
 		all = ();
 	}
 
-	*new { |keyboard|
-		^super.newCopyArgs(keyboard).init;
+	*new { |keyboard, touchOSC|
+		^super.newCopyArgs(keyboard, touchOSC).init;
 	}
 
 	init {
@@ -88,12 +89,20 @@ CVCenterKeyboardSampler {
 		};
 		keyboard.on.add(sampleOnFunc);
 		keyboard.off.add(sampleOffFunc);
+		this.touchOSC !? {
+			CVCenter.use(\removeAllSequences, \false, tab: ("player: " ++ keyboard.keyboardDefName).asSymbol);
+			CVCenter.addActionAt(\removeAllSequences, 'remove all sequences', { |cv|
+				if (cv.input.asBoolean) { this.clearSamples }
+			});
+			CVCenter.cvWidgets[\removeAllSequences].oscConnect(this.touchOSC.addr.ip, "/seq_remove_all");
+		}
 	}
 
 	// maybe it would be more convenient to have only one method 'sample' with a parameter onOff
 	sample { |onOff|
 		var synthDefName, synthParams;
 		var pbproxy, pbinds, name, group, last, items;
+		var ampWdgtName, pauseWdgtName, removeWdgtName;
 
 		case
 		{ isSampling == false or: { onOff == false }} {
@@ -133,14 +142,41 @@ CVCenterKeyboardSampler {
 				// pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
 				name = (synthDefName ++ "-" ++ cSample).asSymbol;
 				Ndef(name).mold(2, \audio, \elastic);
-				Ndef(name).source = Pdef(name, Ppar(pbinds, inf));
+				Ndef(name)[0] = Pdef(name, Ppar(pbinds, inf));
+				Ndef(name)[1] = \filter -> { |in|
+					In.ar(in, 2) * \amp.kr(1, spec: \amp.asSpec)
+				};
 				pdef.add(Ndef(name));
 
 				pdef.last.play(group: group);
 				#sampleStart, sampleEnd = nil!2;
-				cSample = cSample + 1;
-				this.prAddCVActions(synthDefName, groups.indexOf(group));
-				"\nsampling keyboard events finished, should start playing now\n".inform;
+				ampWdgtName = ("% amp".format(name)).asSymbol;
+				pauseWdgtName = ("% pause".format(name)).asSymbol;
+				removeWdgtName = ("% remove".format(name)).asSymbol;
+				defer {
+					CVCenter.use(ampWdgtName, \amp, 1.0, tab: ("player: " ++ keyboard.keyboardDefName).asSymbol);
+					CVCenter.addActionAt(ampWdgtName, 'set sequence amp', { |cv| Ndef(name).set(\amp, cv.value )});
+					CVCenter.use(pauseWdgtName, \false, tab:  ("player: " ++ keyboard.keyboardDefName).asSymbol);
+					CVCenter.addActionAt(pauseWdgtName, 'pause/resume sequence', { |cv|
+						if (cv.input.asBoolean) { Ndef(name).pause } { Ndef(name).resume }
+					});
+					CVCenter.use(removeWdgtName, \false, tab:  ("player: " ++ keyboard.keyboardDefName).asSymbol);
+					CVCenter.addActionAt(removeWdgtName, 'remove sequence', { |cv|
+						if (cv.input.asBoolean) {
+							pdef.clearSamples(cSample-1);
+						}
+					});
+					this.touchOSC !? {
+						this.touchOSC.addr.sendMsg("/seq_%_name".format(cSample), name);
+						this.touchOSC.addr.sendMsg("/seq_%_amp".format(cSample), 1.0);
+						CVCenter.cvWidgets[ampWdgtName].oscConnect(this.touchOSC.addr.ip, name: "/seq_%_amp".format(cSample));
+						CVCenter.cvWidgets[pauseWdgtName].oscConnect(this.touchOSC.addr.ip, name: "/seq_%_pause_resume".format(cSample));
+						CVCenter.cvWidgets[removeWdgtName].oscConnect(this.touchOSC.addr.ip, name: "/seq_%_remove".format(cSample));
+					};
+					cSample = cSample + 1;
+					this.prAddCVActions(synthDefName, groups.indexOf(group));
+					"\nsampling keyboard events finished, should start playing now\n".inform;
+				}
 			} {
 				"\nnothing recorded, please try again\n".inform;
 			}
@@ -156,11 +192,26 @@ CVCenterKeyboardSampler {
 
 	clearSamples { |...indices|
 		if (indices.isEmpty) {
-			pdef.do { |p, i| p.source.clear };
+			pdef.do { |p, i|
+				p.source.clear;
+				this.touchOSC !? {
+					this.touchOSC.addr.sendMsg("/seq_%_name".format(i+1), "");
+					this.touchOSC.addr.sendMsg("/seq_%_amp".format(i+1), 0.0);
+					this.touchOSC.addr.sendMsg("/seq_%_pause_resume".format(i+1), 0.0);
+				}
+			};
 			pdef.removeAll;
+			// reset counter
+			cSample = 1;
+			CVCenter.removeAtTab("player: %".format(keyboard.keyboardDefName).asSymbol);
 		} {
 			indices.do { |i|
 				pdef[i].source.clear;
+				this.touchOSC !? {
+					this.touchOSC.addr.sendMsg("/seq_%_name".format(i+1), "");
+					this.touchOSC.addr.sendMsg("/seq_%_amp".format(i+1), 0.0);
+					this.touchOSC.addr.sendMsg("/seq_%_pause_resume".format(i+1), 0.0);
+				};
 				pdef.removeAt(i);
 			};
 		}
