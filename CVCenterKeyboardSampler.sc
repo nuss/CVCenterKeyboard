@@ -90,7 +90,7 @@ CVCenterKeyboardSampler {
 		keyboard.on.add(sampleOnFunc);
 		keyboard.off.add(sampleOffFunc);
 		this.touchOSC !? {
-			CVCenter.use(\removeAllSequences, \false, tab: ("player: " ++ keyboard.keyboardDefName).asSymbol);
+			CVCenter.use(\removeAllSequences, \false, tab: ("player: %".format(keyboard.keyboardDefName)).asSymbol);
 			CVCenter.addActionAt(\removeAllSequences, 'remove all sequences', { |cv|
 				if (cv.input.asBoolean) { this.clearSamples }
 			});
@@ -101,16 +101,16 @@ CVCenterKeyboardSampler {
 	// maybe it would be more convenient to have only one method 'sample' with a parameter onOff
 	sample { |onOff|
 		var synthDefName, synthParams;
-		var pbproxy, pbinds, name, group, last, items;
+		var pbproxy, pbinds, name, group, last, items, index;
 		var ampWdgtName, pauseWdgtName, removeWdgtName;
 
 		case
-		{ isSampling == false or: { onOff == false }} {
+		{ isSampling == false or: { onOff == true }} {
 			isSampling = true;
 			sampleStart = Main.elapsedTime;
 			this.prResetSampling;
 		}
-		{ isSampling == true or: { onOff == true }} {
+		{ isSampling == true or: { onOff == false }} {
 			isSampling = false;
 			sampleEnd = Main.elapsedTime;
 			synthDefName = keyboard.currentSynthDef;
@@ -147,7 +147,7 @@ CVCenterKeyboardSampler {
 					In.ar(in, 2) * \amp.kr(1, spec: \amp.asSpec)
 				};
 				pdef.add(Ndef(name));
-
+				index = pdef.indexOf(Ndef(name));
 				pdef.last.play(group: group);
 				#sampleStart, sampleEnd = nil!2;
 				ampWdgtName = ("% amp".format(name)).asSymbol;
@@ -163,7 +163,7 @@ CVCenterKeyboardSampler {
 					CVCenter.use(removeWdgtName, \false, tab:  ("player: " ++ keyboard.keyboardDefName).asSymbol);
 					CVCenter.addActionAt(removeWdgtName, 'remove sequence', { |cv|
 						if (cv.input.asBoolean) {
-							pdef.clearSamples(cSample-1);
+							this.clearSamples(index);
 						}
 					});
 					this.touchOSC !? {
