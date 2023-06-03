@@ -272,8 +272,9 @@ CVCenterKeyboard {
 	}
 
 	setSynthDef { |synthDefName|
-		this.freeHangingNodes; // just in case...
+		// this.freeHangingNodes; // just in case...
 		this.clear;
+		group.free;
 		synthDefName = synthDefName.asSymbol;
 		currentSynthDef = synthDefName;
 		this.prEnvInit(synthDefName);
