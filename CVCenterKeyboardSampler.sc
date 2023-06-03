@@ -2,7 +2,6 @@ CVCenterKeyboardSampler {
 	classvar <all;
 	var <keyboard;
 	var <>touchOSC;
-	var <groups;
 	var isSampling = false;
 	var sampleStart, sampleEnd, onTimes, offTimes;
 	var sampleOnFunc, sampleOffFunc, sampleEvents;
@@ -29,7 +28,6 @@ CVCenterKeyboardSampler {
 			keyboard.sampler = this;
 		};
 		all.put(keyboard.keyboardDefName, this);
-		groups = List[];
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues;
 			var offTime;
@@ -101,7 +99,7 @@ CVCenterKeyboardSampler {
 	// maybe it would be more convenient to have only one method 'sample' with a parameter onOff
 	sample { |onOff|
 		var synthDefName, synthParams;
-		var pbproxy, pbinds, name, group, last, items, index;
+		var pbproxy, pbinds, /*name,*/ /*group, */last, items/*, index*/;
 		var ampWdgtName, pauseWdgtName, removeWdgtName;
 
 		case
@@ -128,32 +126,31 @@ CVCenterKeyboardSampler {
 					// [num, this.prDurSum(e.dur)].postln;
 				}
 			};
-			groups.add(group = ParGroup.new);
 			pbinds = sampleEvents.collect { |slot, num|
 				// slot.pairsDo { |k, v| [k, v].postln };
 				if (slot.isEmpty.not) {
-					items = [\instrument, synthDefName, \group, group, synthParams[synthDefName].pitchControl, num.midicps]
+					items = [\instrument, synthDefName, synthParams[synthDefName].pitchControl, num.midicps]
 					++ slot.collect(Pseq(_, inf)).asPairs;
 					pbproxy = Pbind.new.patternpairs_(items);
 				}
 			}.takeThese(_.isNil);
 			if (pbinds.notEmpty) {
-				// pbinds.do { |pb| pb.patternpairs.postln };
+				var name, index;
+				pbinds.do { |pb| pb.patternpairs.postln };
 				// pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
 				name = (synthDefName ++ "-" ++ cSample).asSymbol;
 				Ndef(name).mold(2, \audio, \elastic);
 				Ndef(name)[0] = Pdef(name, Ppar(pbinds, inf));
-				Ndef(name)[1] = \filter -> { |in|
-					In.ar(in, 2) * \amp.kr(1, spec: \amp.asSpec)
-				};
+				// Ndef(name)[1] = \filter -> { |in|
+				// 	In.ar(in, 2).checkBadValues * \amp.kr(1, spec: \amp.asSpec)
+				// };
+				Ndef(name).play;
 				pdef.add(Ndef(name));
-				index = pdef.indexOf(Ndef(name));
-				pdef.last.play(group: group);
 				#sampleStart, sampleEnd = nil!2;
 				ampWdgtName = ("% amp".format(name)).asSymbol;
 				pauseWdgtName = ("% pause".format(name)).asSymbol;
 				removeWdgtName = ("% remove".format(name)).asSymbol;
-				defer {
+				{
 					CVCenter.use(ampWdgtName, \amp, 1.0, tab: ("player: " ++ keyboard.keyboardDefName).asSymbol);
 					CVCenter.addActionAt(ampWdgtName, 'set sequence amp', { |cv| Ndef(name).set(\amp, cv.value )});
 					CVCenter.use(pauseWdgtName, \false, tab:  ("player: " ++ keyboard.keyboardDefName).asSymbol);
@@ -162,9 +159,7 @@ CVCenterKeyboardSampler {
 					});
 					CVCenter.use(removeWdgtName, \false, tab:  ("player: " ++ keyboard.keyboardDefName).asSymbol);
 					CVCenter.addActionAt(removeWdgtName, 'remove sequence', { |cv|
-						if (cv.input.asBoolean) {
-							this.clearSamples(index);
-						}
+						if (cv.input.asBoolean) { this.clearSamples(name) }
 					});
 					this.touchOSC !? {
 						this.touchOSC.addr.sendMsg("/seq_%_name".format(cSample), name);
@@ -174,9 +169,9 @@ CVCenterKeyboardSampler {
 						CVCenter.cvWidgets[removeWdgtName].oscConnect(this.touchOSC.addr.ip, name: "/seq_%_remove".format(cSample));
 					};
 					cSample = cSample + 1;
-					this.prAddCVActions(synthDefName, groups.indexOf(group));
+					this.prAddCVActions(synthDefName, name);
 					"\nsampling keyboard events finished, should start playing now\n".inform;
-				}
+				}.defer
 			} {
 				"\nnothing recorded, please try again\n".inform;
 			}
@@ -190,34 +185,43 @@ CVCenterKeyboardSampler {
 		sampleEvents = ()!128;
 	}
 
-	clearSamples { |...indices|
-		if (indices.isEmpty) {
-			pdef.do { |p, i|
-				p.source.clear;
-				this.touchOSC !? {
-					this.touchOSC.addr.sendMsg("/seq_%_name".format(i+1), "");
-					this.touchOSC.addr.sendMsg("/seq_%_amp".format(i+1), 0.0);
-					this.touchOSC.addr.sendMsg("/seq_%_pause_resume".format(i+1), 0.0);
-				}
-			};
-			pdef.removeAll;
-			// reset counter
-			cSample = 1;
-			CVCenter.removeAtTab("player: %".format(keyboard.keyboardDefName).asSymbol);
-		} {
-			indices.do { |i|
-				pdef[i].source.clear;
-				this.touchOSC !? {
-					this.touchOSC.addr.sendMsg("/seq_%_name".format(i+1), "");
-					this.touchOSC.addr.sendMsg("/seq_%_amp".format(i+1), 0.0);
-					this.touchOSC.addr.sendMsg("/seq_%_pause_resume".format(i+1), 0.0);
+	clearSamples { |...keys|
+		var i;
+
+		if (pdef.notEmpty) {
+			if (keys.isEmpty) {
+				pdef.do { |p, i|
+					p.source.clear;
+					p.clear;
+					this.touchOSC !? {
+						this.touchOSC.addr.sendMsg("/seq_%_name".format(i+1), "");
+						this.touchOSC.addr.sendMsg("/seq_%_amp".format(i+1), 0.0);
+						this.touchOSC.addr.sendMsg("/seq_%_pause_resume".format(i+1), 0.0);
+					}
 				};
-				pdef.removeAt(i);
-			};
+				pdef.removeAll;
+				// reset counter
+				cSample = 1;
+				CVCenter.removeAtTab("player: %".format(keyboard.keyboardDefName).asSymbol);
+			} {
+				keys.do { |k|
+					if (k.class == String) { k = k.asSymbol };
+					if (k.isInteger) { k = pdef[k].key };
+					i = pdef.indexOf(Ndef(k));
+					Ndef(k).source.clear;
+					Ndef(k).clear;
+					this.touchOSC !? {
+						this.touchOSC.addr.sendMsg("/seq_%_name".format(i+1), "");
+						this.touchOSC.addr.sendMsg("/seq_%_amp".format(i+1), 0.0);
+						this.touchOSC.addr.sendMsg("/seq_%_pause_resume".format(i+1), 0.0);
+					};
+					pdef.removeAt(i);
+				};
+			}
 		}
 	}
 
-	prAddCVActions { |synthDefName, groupIndex|
+	prAddCVActions { |synthDefName, name|
 		var thisWdgtsAndCtrls = keyboard.namesCVs[synthDefName].clump(3);
 		thisWdgtsAndCtrls.do { |col|
 			// col is a group of 3 parameters:
@@ -225,17 +229,16 @@ CVCenterKeyboardSampler {
 			// 1: the arg to be set
 			// 2: the widget's CV(s) - if it's an Array it's a CVWidget2D
 			if (col[2].isArray) {
-				// FIXME: possibly 'all' should be a Dictionary
-				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
-					CVCenterKeyboardSampler.all['%'].groups[%].set('%', [cv.value, CVCenter.at('%').hi.value])
-				}".format(keyboard.keyboardDefName, groupIndex, col[1], col[0]), \lo);
-				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
-					CVCenterKeyboardSampler.all['%'].groups[%].set('%', [CVCenter.at('%').lo.value, cv.value])
-				}".format(keyboard.keyboardDefName, groupIndex, col[1], col[0]), \hi);
+				CVCenter.addActionAt(col[0], "set Ndef('%')".format(name).asSymbol, { |cv|
+					Ndef(name).group.set(col[1], [cv.value, CVCenter.at(col[0]).hi.value])
+				}, \lo);
+				CVCenter.addActionAt(col[0], "set Ndef('%')".format(name).asSymbol, { |cv|
+					Ndef(name).group.set(col[1], [CVCenter.at(col[0]).lo.value, cv.value])
+				}, \hi);
 			} {
-				CVCenter.addActionAt(col[0], "set group%".format(groupIndex).asSymbol, "{ |cv|
-					CVCenterKeyboardSampler.all['%'].groups[%].set('%', cv.value)
-				}".format(keyboard.keyboardDefName, groupIndex, col[1]));
+				CVCenter.addActionAt(col[0], "set Ndef('%')".format(name).asSymbol, { |cv|
+					Ndef(name).group.set(col[1], cv.value)
+				});
 			}
 		}
 	}
