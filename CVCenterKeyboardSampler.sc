@@ -136,7 +136,7 @@ CVCenterKeyboardSampler {
 			}.takeThese(_.isNil);
 			if (pbinds.notEmpty) {
 				var name, index;
-				pbinds.do { |pb| pb.patternpairs.postln };
+				// pbinds.do { |pb| pb.patternpairs.postln };
 				// pdef.add(Pdef((synthDefName ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
 				name = (synthDefName ++ "-" ++ cSample).asSymbol;
 				Ndef(name).mold(2, \audio, \elastic);
@@ -151,7 +151,7 @@ CVCenterKeyboardSampler {
 				pauseWdgtName = ("% pause".format(name)).asSymbol;
 				removeWdgtName = ("% remove".format(name)).asSymbol;
 				{
-					CVCenter.use(ampWdgtName, \amp, 1.0, tab: ("player: " ++ keyboard.keyboardDefName).asSymbol);
+					CVCenter.use(ampWdgtName, \amp, 1.0, tab: ("player: %".format(keyboard.keyboardDefName)).asSymbol);
 					CVCenter.addActionAt(ampWdgtName, 'set sequence amp', { |cv| Ndef(name).set(\amp, cv.value )});
 					CVCenter.use(pauseWdgtName, \false, tab:  ("player: " ++ keyboard.keyboardDefName).asSymbol);
 					CVCenter.addActionAt(pauseWdgtName, 'pause/resume sequence', { |cv|
@@ -216,6 +216,11 @@ CVCenterKeyboardSampler {
 						this.touchOSC.addr.sendMsg("/seq_%_pause_resume".format(i+1), 0.0);
 					};
 					pdef.removeAt(i);
+					{
+						CVCenter.removeAt(("% amp".format(k)).asSymbol);
+						CVCenter.removeAt(("% pause".format(k)).asSymbol);
+						CVCenter.removeAt(("% remove".format(k)).asSymbol);
+					}.defer
 				};
 			}
 		}
