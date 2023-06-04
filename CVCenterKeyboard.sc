@@ -59,11 +59,9 @@ CVCenterKeyboard {
 				\CVCenterKeyboardSampler.asClass.notNil
 			}
 		}) {
-			CVCenterKeyboardSampler(this);
-			touchOSC !? {
-				if (touchOSC.class == NetAddr) {
-					this.sampler.touchOSC = TouchOSC(keyboardDefName, touchOSC);
-				}
+			CVCenterKeyboardSampler(this, touchOSC);
+			if (touchOSC.notNil and: { touchOSC.class == NetAddr }) {
+				this.sampler.touchOSC = TouchOSC(keyboardDefName, touchOSC);
 			}
 		};
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])

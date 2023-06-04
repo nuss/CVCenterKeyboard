@@ -13,10 +13,10 @@ CVCenterKeyboardSampler {
 	}
 
 	*new { |keyboard, touchOSC|
-		^super.newCopyArgs(keyboard, touchOSC).init;
+		^super.newCopyArgs(keyboard).init(touchOSC);
 	}
 
-	init {
+	init { |touchOSC|
 		keyboard ?? {
 			"No CVCenterKeyboard instance given!".error;
 			^nil
@@ -28,6 +28,14 @@ CVCenterKeyboardSampler {
 			keyboard.sampler = this;
 		};
 		all.put(keyboard.keyboardDefName, this);
+		CVCenter.use(\removeAllSequences, \false, tab: ("player: %".format(keyboard.keyboardDefName)).asSymbol);
+		CVCenter.addActionAt(\removeAllSequences, 'remove all sequences', { |cv|
+			if (cv.input.asBoolean) { this.clearSamples }
+		});
+		if (touchOSC.notNil and: touchOSC.class == NetAddr) {
+			// touchOSC.ip should be identical with the IP address in the *not yet* created TouchOSC instance
+			CVCenter.cvWidgets[\removeAllSequences].oscConnect(touchOSC.ip, name: "/seq_remove_all");
+		};
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues;
 			var offTime;
@@ -87,13 +95,6 @@ CVCenterKeyboardSampler {
 		};
 		keyboard.on.add(sampleOnFunc);
 		keyboard.off.add(sampleOffFunc);
-		this.touchOSC !? {
-			CVCenter.use(\removeAllSequences, \false, tab: ("player: %".format(keyboard.keyboardDefName)).asSymbol);
-			CVCenter.addActionAt(\removeAllSequences, 'remove all sequences', { |cv|
-				if (cv.input.asBoolean) { this.clearSamples }
-			});
-			CVCenter.cvWidgets[\removeAllSequences].oscConnect(this.touchOSC.addr.ip, "/seq_remove_all");
-		}
 	}
 
 	// maybe it would be more convenient to have only one method 'sample' with a parameter onOff
@@ -188,8 +189,8 @@ CVCenterKeyboardSampler {
 	clearSamples { |...keys|
 		var i;
 
-		if (pdef.notEmpty) {
-			if (keys.isEmpty) {
+		if (pdef.notNil and: { pdef.notEmpty }) {
+			if (keys.isNil) {
 				pdef.do { |p, i|
 					p.source.clear;
 					p.clear;
