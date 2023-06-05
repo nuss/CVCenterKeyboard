@@ -53,6 +53,11 @@ argument:: chan
 Optional - an link::Classes/Integer:: denoting the MIDI channel the keyboard should use. If omitted the keyboard can be played on any MIDI channel (See also: link::Guides/UsingMIDI#MIDIFunc and MIDIdef: Filtering based on device or message data::)
 argument:: addSampler
 Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::#-sample::. Calling link::#-sample:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardSampler:: for more information on the recording mechanism and the structure of the recorded sequences.
+argument:: touchOSC
+Optional - a link::Classes/NetAddr:: instance, refering to an installation of a TouchOSC app on a mobile phone or tablet computer. The device must be in the same network as the computer. The IP address must be the device' IP address, the port is the "incoming" port as set in TouchOSC's OSC setup. Included with the distribution of this class (library) you should find a TouchOSC layout that can be edited in the TouchOSCEditor - download at https://hexler.net/touchosc-mk1#resources . The layout is built for a resolution of 800 x 1280 pixels, so you might have to adapt it to the resolution of your device.
+
+NOTE:: You might want to use a different OSC app for control, using different OSC command names. Though the class is named link::Classes/TouchOSC:: it is not necessarily bound to the TouchOSC app. You should be able to set your own command names, either in the class or one of its instances.
+::
 
 METHOD:: newSynthDef
 Instantiate a new CVCenterKeyboard holding the SynthDef denoted by code::synthDefName::. The SynthDef must have beem compiled in advance.
@@ -67,6 +72,9 @@ argument:: chan
 Optional - an link::Classes/Integer:: denoting the MIDI channel the keyboard should use. If omitted the keyboard can be played on any MIDI channel (See also: link::Guides/UsingMIDI#MIDIFunc and MIDIdef: Filtering based on device or message data::)
 argument:: addSampler
 Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::#-sample::. Calling link::#-sample:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardSampler:: for more information on the recording mechanism and the structure of the recorded sequences.
+argument:: touchOSC
+Optional - a NetAddr instance, refering to an installation of a TouchOSC app on a mobile phone or tablet computer. For detailed description see link::#*new:: argument code::touchOSC::.
+
 
 METHOD:: at
 A simple convenience method, same as code::CVCenterKeyboard.all[keyboardDefName]:: except for the fact that code::keyboardDefName:: can be given as link::Classes/String:: as well (will be converted to a link::Classes/Symbol:: internally).
@@ -333,7 +341,7 @@ argument:: outbus
 Optional - an link::Classes/Integer:: represeting the link::Classes/Bus:: on which the filtered sound of the CVCenterKeyboard shall play. By default this will be the out bus of the CVCenterKeyboard instance.
 
 METHOD:: removeOutProxy
-Remove the link::Classes/NodeProxy:: or link::Classes/Ndef:: added by link::-addOutProxy::.
+Remove the link::Classes/NodeProxy:: or link::Classes/Ndef:: added by link::#-addOutProxy::.
 argument:: outbus
 If the argument code::transbus:: in link::#-addOutProxy:: has been given one needs to re-set the out bus of the CVCenterKeyboard instance.
 
@@ -343,7 +351,7 @@ returns:: The proxy created by calling link::#-addOutProxy::.
 SUBSECTION:: Recording sequences
 
 METHOD:: addSampler
-To be able to sample/record keystrokes on the keyboard a link::Classes/CVCenterKeyboardSampler:: has to be assigned. By default this is already done when calling link::*new:: or link::*newSynthDef:: if the argument code::addSampler:: hasn't explicitly been set to code::false:: (given that link::Classes/CVCenterKeyboardSampler:: is installed, which should be the case as its part of the CVCenterKeyboard library).
+To be able to sample/record keystrokes on the keyboard a link::Classes/CVCenterKeyboardSampler:: has to be assigned. By default this is already done when calling link::**new:: or link::#*newSynthDef:: if the argument code::addSampler:: hasn't explicitly been set to code::false:: (given that link::Classes/CVCenterKeyboardSampler:: is installed, which should be the case as its part of the CVCenterKeyboard library).
 
 METHOD:: sample
 A convenience method for calling link::Classes/CVCenterKeyboardSampler#-sample::.
@@ -388,7 +396,7 @@ argument:: ctrlname
 A link::Classes/Symbol:: referencing the link::Classes/ControlName:: whose control should be delegated to the user again.
 
 METHOD:: mappedBusses
-returns:: An link::Classes/Event:: holding all currently mapped busses. The keys will be link::Classes/ControlNames:: that get set by the bus(ses) referenced by the assigned bus indexes.
+returns:: An link::Classes/Event:: holding all currently mapped busses. The keys will be link::Classes/ControlName::s that get set by the bus(ses) referenced by the assigned bus indexes.
 
 PRIVATE:: init, initClass, prAddWidgetActionsForKeyboard, prEnvInit, prInitCVs, prInitSynthDef, prInitKeyboard
 

@@ -1,0 +1,87 @@
+TITLE:: CVCenterKeyboardSampler
+summary:: An extension to CVCenterKeyboard that lets you records sequences played on a MIDI keyboard.
+categories:: Conductor>CVCenter, External Control>MIDI
+related:: Classes/Pattern, Classes/Pdef, Classes/Pbind, Classes/Ppar, Classes/Ndef
+
+DESCRIPTION::
+When creating a new link::Classes/CVCenterKeyboard:: you may have noticed the argument code::addSampler:: in link::Classes/CVCenterKeyboard:*new:: or link::Classes/CVCenterKeyboard:*newSynthDef:: which is by default set to code::true::. I.e. if that argument is left unchanged a new CVCenterKeyboardSampler instance, assigned to your CVCenterKeyboard instance will be created automatically. Now you should be able to "sample" any sequence you play on your keyboard by executing the link::-sample:: method once. Executing this method again will stop recording and the just recorded sequence should play instantly.
+
+First code examples:
+
+code::
+// a simple SynthDef
+(
+SynthDef(\recordTest, {
+	var env = EnvGen.ar(
+		Env.adsr(\atk.kr(0.01), \dec.kr(0.3), \sust.kr(0.5), \rel.kr(0.7)),
+		\gate.kr(1), // we need a gated envelope!
+		doneAction: Done.freeSelf // free the Synth when done
+	);
+	var freq = \freq.kr(220);
+	var son = SinOsc.ar([freq, freq+1]);
+	Out.ar(\out.kr(0), son * \veloc.kr(1) * \amp.kr(0.5) * env);
+}).add;
+)
+
+~kb = CVCenterKeyboard.newSynthDef(\recordTest);
+
+(
+~kb.setUpControls(
+	\recordTest,
+	\kb,
+	bendControl: \freq,
+	setSynthDef: true
+)
+)
+
+// start or stop recording
+// the instance will remember its state
+// so no additional argument for starting
+// or stopping should be necessary
+// calling 'sample' on the keyboard will forward
+// the call to CVCenterKeyboardSampler:#-sample
+~kb.sample
+::
+
+CLASSMETHODS::
+
+METHOD:: all
+
+METHOD:: initClass
+
+METHOD:: new
+argument:: keyboard
+argument:: touchOSC
+
+
+INSTANCEMETHODS::
+
+METHOD:: sample
+argument:: onOff
+
+METHOD:: clearSamples
+argument::  ... keys
+
+METHOD:: prResetSampling
+
+METHOD:: touchOSC
+
+METHOD:: pdef
+
+METHOD:: keyboard
+
+METHOD:: prAddCVActions
+argument:: synthDefName
+argument:: name
+
+METHOD:: debug
+
+METHOD:: init
+argument:: touchOSC
+
+
+EXAMPLES::
+
+code::
+_some_example_code_
+::
