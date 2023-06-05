@@ -17,6 +17,8 @@ CVCenterKeyboardSampler {
 	}
 
 	init { |touchOSC|
+		var removeAllWdgtName;
+
 		keyboard ?? {
 			"No CVCenterKeyboard instance given!".error;
 			^nil
@@ -28,13 +30,18 @@ CVCenterKeyboardSampler {
 			keyboard.sampler = this;
 		};
 		all.put(keyboard.keyboardDefName, this);
-		CVCenter.use(\removeAllSequences, \false, tab: ("player: %".format(keyboard.keyboardDefName)).asSymbol);
-		CVCenter.addActionAt(\removeAllSequences, 'remove all sequences', "{ |cv|
-			if (cv.input.asBoolean) { CVCenterKeyboardSampler.all['%'].clearSamples }
-		}".format(keyboard.keyboardDefName));
+		removeAllWdgtName = "[%] remove all sequences".format(keyboard.keyboardDefName).asSymbol;
+		CVCenter.use(removeAllWdgtName, \false, tab: "player: %".format(keyboard.keyboardDefName).asSymbol);
+		CVCenter.addActionAt(
+			removeAllWdgtName,
+			'remove all sequences',
+			"{ |cv|
+				if (cv.input.asBoolean) { CVCenterKeyboardSampler.all['%'].clearSamples }
+			}".format(keyboard.keyboardDefName)
+		);
 		if (touchOSC.notNil and: touchOSC.class == NetAddr) {
 			// touchOSC.ip should be identical with the IP address in the *not yet* created TouchOSC instance
-			CVCenter.cvWidgets[\removeAllSequences].oscConnect(touchOSC.ip, name: "/seq_remove_all");
+			CVCenter.cvWidgets[removeAllWdgtName].oscConnect(touchOSC.ip, name: "/seq_remove_all");
 		};
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues;
@@ -148,20 +155,27 @@ CVCenterKeyboardSampler {
 				Ndef(name).play;
 				pdef.add(Ndef(name));
 				#sampleStart, sampleEnd = nil!2;
-				ampWdgtName = ("% amp".format(name)).asSymbol;
-				pauseWdgtName = ("% pause".format(name)).asSymbol;
-				removeWdgtName = ("% remove".format(name)).asSymbol;
+				ampWdgtName = "[%] % amp".format(keyboard.keyboardDefName, name).asSymbol;
+				pauseWdgtName = "[%] % pause".format(keyboard.keyboardDefName, name ).asSymbol;
+				removeWdgtName = "[%] % remove".format(keyboard.keyboardDefName, name).asSymbol;
 				{
-					CVCenter.use(ampWdgtName, \amp, 1.0, tab: ("player: %".format(keyboard.keyboardDefName)).asSymbol);
+					CVCenter.use(ampWdgtName, \amp, 1.0, tab: "player: %".format(keyboard.keyboardDefName).asSymbol);
 					CVCenter.addActionAt(ampWdgtName, 'set sequence amp', { |cv| Ndef(name).set(\amp, cv.value )});
-					CVCenter.use(pauseWdgtName, \false, tab:  ("player: " ++ keyboard.keyboardDefName).asSymbol);
-					CVCenter.addActionAt(pauseWdgtName, 'pause/resume sequence', { |cv|
-						if (cv.input.asBoolean) { Ndef(name).pause } { Ndef(name).resume }
-					});
-					CVCenter.use(removeWdgtName, \false, tab:  ("player: " ++ keyboard.keyboardDefName).asSymbol);
-					CVCenter.addActionAt(removeWdgtName, 'remove sequence', { |cv|
-						if (cv.input.asBoolean) { this.clearSamples(name) }
-					});
+					CVCenter.use(pauseWdgtName, \false, tab:  "player: " ++ keyboard.keyboardDefName).asSymbol;
+					CVCenter.addActionAt(pauseWdgtName,
+						'pause/resume sequence',
+						{ |cv|
+							if (cv.input.asBoolean) { Ndef(name).pause } { Ndef(name).resume }
+						}
+					);
+					CVCenter.use(removeWdgtName, \false, tab: "player: %".format(keyboard.keyboardDefName).asSymbol);
+					CVCenter.addActionAt(
+						removeWdgtName,
+						'remove sequence',
+						{ |cv|
+							if (cv.input.asBoolean) { this.clearSamples(name) }
+						}
+					);
 					this.touchOSC !? {
 						this.touchOSC.addr.sendMsg("/seq_%_name".format(cSample), name);
 						this.touchOSC.addr.sendMsg("/seq_%_amp".format(cSample), 1.0);
