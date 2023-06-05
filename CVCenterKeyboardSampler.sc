@@ -29,9 +29,9 @@ CVCenterKeyboardSampler {
 		};
 		all.put(keyboard.keyboardDefName, this);
 		CVCenter.use(\removeAllSequences, \false, tab: ("player: %".format(keyboard.keyboardDefName)).asSymbol);
-		CVCenter.addActionAt(\removeAllSequences, 'remove all sequences', { |cv|
-			if (cv.input.asBoolean) { this.clearSamples }
-		});
+		CVCenter.addActionAt(\removeAllSequences, 'remove all sequences', "{ |cv|
+			if (cv.input.asBoolean) { CVCenterKeyboardSampler.all['%'].clearSamples }
+		}".format(keyboard.keyboardDefName));
 		if (touchOSC.notNil and: touchOSC.class == NetAddr) {
 			// touchOSC.ip should be identical with the IP address in the *not yet* created TouchOSC instance
 			CVCenter.cvWidgets[\removeAllSequences].oscConnect(touchOSC.ip, name: "/seq_remove_all");
