@@ -12,11 +12,11 @@ CVCenterKeyboardSampler {
 		all = ();
 	}
 
-	*new { |keyboard, touchOSC|
-		^super.newCopyArgs(keyboard).init(touchOSC);
+	*new { |keyboard|
+		^super.newCopyArgs(keyboard).init;
 	}
 
-	init { |touchOSC|
+	init {
 		var removeAllWdgtName;
 
 		keyboard ?? {
@@ -39,9 +39,9 @@ CVCenterKeyboardSampler {
 				if (cv.input.asBoolean) { CVCenterKeyboardSampler.all['%'].clearSamples }
 			}".format(keyboard.keyboardDefName)
 		);
-		if (touchOSC.notNil and: touchOSC.class == NetAddr) {
+		if (touchOSC.notNil) {
 			// touchOSC.ip should be identical with the IP address in the *not yet* created TouchOSC instance
-			CVCenter.cvWidgets[removeAllWdgtName].oscConnect(touchOSC.ip, name: "/seq_remove_all");
+			CVCenter.cvWidgets[removeAllWdgtName].oscConnect(touchOSC.addr.ip, name: TouchOSC.seqRemoveAllCmd);
 		};
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues;
@@ -177,11 +177,11 @@ CVCenterKeyboardSampler {
 						}
 					);
 					this.touchOSC !? {
-						this.touchOSC.addr.sendMsg("/seq_%_name".format(cSample), name);
-						this.touchOSC.addr.sendMsg("/seq_%_amp".format(cSample), 1.0);
-						CVCenter.cvWidgets[ampWdgtName].oscConnect(this.touchOSC.addr.ip, name: "/seq_%_amp".format(cSample));
-						CVCenter.cvWidgets[pauseWdgtName].oscConnect(this.touchOSC.addr.ip, name: "/seq_%_pause_resume".format(cSample));
-						CVCenter.cvWidgets[removeWdgtName].oscConnect(this.touchOSC.addr.ip, name: "/seq_%_remove".format(cSample));
+						this.touchOSC.addr.sendMsg(TouchOSC.seqNameCmds[cSample-1], name);
+						this.touchOSC.addr.sendMsg(TouchOSC.seqAmpCmds[cSample-1], 1.0);
+						CVCenter.cvWidgets[ampWdgtName].oscConnect(this.touchOSC.addr.ip, name: TouchOSC.seqAmpCmds[cSample-1]);
+						CVCenter.cvWidgets[pauseWdgtName].oscConnect(this.touchOSC.addr.ip, name: TouchOSC.seqPauseResumeCmds[cSample-1]);
+						CVCenter.cvWidgets[removeWdgtName].oscConnect(this.touchOSC.addr.ip, name: TouchOSC.seqRemoveCmds[cSample-1]);
 					};
 					cSample = cSample + 1;
 					this.prAddCVActions(synthDefName, name);
@@ -209,9 +209,9 @@ CVCenterKeyboardSampler {
 					p.source.clear;
 					p.clear;
 					this.touchOSC !? {
-						this.touchOSC.addr.sendMsg("/seq_%_name".format(i+1), "");
-						this.touchOSC.addr.sendMsg("/seq_%_amp".format(i+1), 0.0);
-						this.touchOSC.addr.sendMsg("/seq_%_pause_resume".format(i+1), 0.0);
+						this.touchOSC.addr.sendMsg(TouchOSC.seqNameCmds[i], "");
+						this.touchOSC.addr.sendMsg(TouchOSC.seqAmpCmds[i], 0.0);
+						this.touchOSC.addr.sendMsg(TouchOSC.seqPauseResumeCmds[i], 0.0);
 					}
 				};
 				pdef.removeAll;
@@ -226,9 +226,9 @@ CVCenterKeyboardSampler {
 					Ndef(k).source.clear;
 					Ndef(k).clear;
 					this.touchOSC !? {
-						this.touchOSC.addr.sendMsg("/seq_%_name".format(i+1), "");
-						this.touchOSC.addr.sendMsg("/seq_%_amp".format(i+1), 0.0);
-						this.touchOSC.addr.sendMsg("/seq_%_pause_resume".format(i+1), 0.0);
+						this.touchOSC.addr.sendMsg(TouchOSC.seqNameCmds[i], "");
+						this.touchOSC.addr.sendMsg(TouchOSC.seqAmpCmds[i], 0.0);
+						this.touchOSC.addr.sendMsg(TouchOSC.seqPauseResumeCmds[i], 0.0);
 					};
 					pdef.removeAt(i);
 					{

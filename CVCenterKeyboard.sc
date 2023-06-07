@@ -1,6 +1,6 @@
 CVCenterKeyboard {
 	classvar <all;
-	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName;
+	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName, <touchOSC;
 	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, wdgtNames, <outProxy;
 	var <>sampler, sampling = false, sampleEvents;
@@ -44,6 +44,9 @@ CVCenterKeyboard {
 				"MIDIIn.connectAll failed. Please establish the necessary connections manually".warn;
 			}
 		};
+		if (touchOSC.notNil and: { touchOSC.class == NetAddr }) {
+			touchOSC = TouchOSC(keyboardDefName, touchOSC)
+		};
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			if (this.debug) { "MIDIFunc.noteOn initialized properly".postln }
 		}, chan, srcID);
@@ -54,14 +57,10 @@ CVCenterKeyboard {
 			if (this.debug) { "MIDIFunc.bend initialized properly".postln }
 		}, chan, srcID);
 		#onFuncs, offFuncs, bendFuncs, mappedBusses = ()!4;
-		if (addSampler and: {
-			sampler.isNil and: {
-				\CVCenterKeyboardSampler.asClass.notNil
-			}
-		}) {
-			CVCenterKeyboardSampler(this, touchOSC);
-			if (touchOSC.notNil and: { touchOSC.class == NetAddr }) {
-				this.sampler.touchOSC = TouchOSC(keyboardDefName, touchOSC);
+		if (addSampler and: { sampler.isNil }) {
+			CVCenterKeyboardSampler(this);
+			touchOSC !? {
+				this.sampler.touchOSC = touchOSC;
 			}
 		};
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
