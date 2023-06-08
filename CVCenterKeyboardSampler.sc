@@ -1,7 +1,6 @@
 CVCenterKeyboardSampler {
 	classvar <all;
 	var <keyboard;
-	var <>touchOSC;
 	var isSampling = false;
 	var sampleStart, sampleEnd, onTimes, offTimes;
 	var sampleOnFunc, sampleOffFunc, sampleEvents;
@@ -20,14 +19,12 @@ CVCenterKeyboardSampler {
 		var removeAllWdgtName;
 
 		keyboard ?? {
-			"No CVCenterKeyboard instance given!".error;
+			"[CVCenterKeyboardSampler] No CVCenterKeyboard instance given!".error;
 			^nil
 		};
 		if (keyboard.class != CVCenterKeyboard) {
-			"The given keyboard doesn't appear to be a CVCenterKeyboard instance".error;
+			"[CVCenterKeyboardSampler] The given keyboard doesn't appear to be a CVCenterKeyboard instance: %".format(keyboard.class).error;
 			^nil
-		} {
-			keyboard.sampler = this;
 		};
 		all.put(keyboard.keyboardDefName, this);
 		removeAllWdgtName = "[%] remove all sequences".format(keyboard.keyboardDefName).asSymbol;
@@ -36,22 +33,21 @@ CVCenterKeyboardSampler {
 			removeAllWdgtName,
 			'remove all sequences',
 			"{ |cv|
-				if (cv.input.asBoolean) { CVCenterKeyboardSampler.all['%'].clearSamples }
+				if (cv.input.asBoolean) { CVCenterKeyboardSampler.all['%'].clearSequences }
 			}".format(keyboard.keyboardDefName)
 		);
-		if (touchOSC.notNil) {
-			// touchOSC.ip should be identical with the IP address in the *not yet* created TouchOSC instance
-			CVCenter.cvWidgets[removeAllWdgtName].oscConnect(touchOSC.addr.ip, name: TouchOSC.seqRemoveAllCmd);
+		if (keyboard.touchOSC.notNil) {
+			CVCenter.cvWidgets[removeAllWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveAllCmd);
 		};
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues;
 			var offTime;
 
 			keyboard.currentSynthDef ?? {
-				"CVCenterKeyboardSampler: No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
+				"[CVCenterKeyboardSampler] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
 			};
 			if (keyboard.synthParams.isNil) {
-				"No SynthDef initialized for keyboard yet. Call \"setUpControls\" on your CVCenterKeyboard instance first.".warn;
+				"[CVCenterKeyboardSampler] No SynthDef initialized for keyboard yet. Call \"setUpControls\" on your CVCenterKeyboard instance first.".warn;
 			} {
 				kbArgs = [
 					keyboard.synthParams[keyboard.currentSynthDef].pitchControl,
@@ -89,7 +85,7 @@ CVCenterKeyboardSampler {
 		sampleOffFunc = { |veloc, num, chan, src|
 			var onTime;
 			keyboard.currentSynthDef ?? {
-				"CVCenterKeyboardSampler: No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
+				"[]CVCenterKeyboardSampler] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
 			};
 			if (isSampling) {
 				offTimes[num] = Main.elapsedTime;
@@ -160,7 +156,7 @@ CVCenterKeyboardSampler {
 				removeWdgtName = "[%] % remove".format(keyboard.keyboardDefName, name).asSymbol;
 				{
 					CVCenter.use(ampWdgtName, \amp, 1.0, tab: "player: %".format(keyboard.keyboardDefName).asSymbol);
-					CVCenter.addActionAt(ampWdgtName, 'set sequence amp', { |cv| Ndef(name).set(\amp, cv.value )});
+					CVCenter.addActionAt(ampWdgtName, 'set seq amp', { |cv| Ndef(name).set(\amp, cv.value )});
 					CVCenter.use(pauseWdgtName, \false, tab:  "player: " ++ keyboard.keyboardDefName).asSymbol;
 					CVCenter.addActionAt(pauseWdgtName,
 						'pause/resume sequence',
@@ -173,15 +169,15 @@ CVCenterKeyboardSampler {
 						removeWdgtName,
 						'remove sequence',
 						{ |cv|
-							if (cv.input.asBoolean) { this.clearSamples(name) }
+							if (cv.input.asBoolean) { this.clearSequences(name) }
 						}
 					);
-					this.touchOSC !? {
-						this.touchOSC.addr.sendMsg(TouchOSC.seqNameCmds[cSample-1], name);
-						this.touchOSC.addr.sendMsg(TouchOSC.seqAmpCmds[cSample-1], 1.0);
-						CVCenter.cvWidgets[ampWdgtName].oscConnect(this.touchOSC.addr.ip, name: TouchOSC.seqAmpCmds[cSample-1]);
-						CVCenter.cvWidgets[pauseWdgtName].oscConnect(this.touchOSC.addr.ip, name: TouchOSC.seqPauseResumeCmds[cSample-1]);
-						CVCenter.cvWidgets[removeWdgtName].oscConnect(this.touchOSC.addr.ip, name: TouchOSC.seqRemoveCmds[cSample-1]);
+					keyboard.touchOSC !? {
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[cSample-1], name);
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[cSample-1], 1.0);
+						CVCenter.cvWidgets[ampWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqAmpCmds[cSample-1]);
+						CVCenter.cvWidgets[pauseWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqPauseResumeCmds[cSample-1]);
+						CVCenter.cvWidgets[removeWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveCmds[cSample-1]);
 					};
 					cSample = cSample + 1;
 					this.prAddCVActions(synthDefName, name);
@@ -200,7 +196,7 @@ CVCenterKeyboardSampler {
 		sampleEvents = ()!128;
 	}
 
-	clearSamples { |...keys|
+	clearSequences { |...keys|
 		var i;
 
 		if (pdef.notNil and: { pdef.notEmpty }) {
@@ -208,10 +204,10 @@ CVCenterKeyboardSampler {
 				pdef.do { |p, i|
 					p.source.clear;
 					p.clear;
-					this.touchOSC !? {
-						this.touchOSC.addr.sendMsg(TouchOSC.seqNameCmds[i], "");
-						this.touchOSC.addr.sendMsg(TouchOSC.seqAmpCmds[i], 0.0);
-						this.touchOSC.addr.sendMsg(TouchOSC.seqPauseResumeCmds[i], 0.0);
+					keyboard.touchOSC !? {
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[i], "");
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[i], 0.0);
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqPauseResumeCmds[i], 0.0);
 					}
 				};
 				pdef.removeAll;
@@ -225,10 +221,10 @@ CVCenterKeyboardSampler {
 					i = pdef.indexOf(Ndef(k));
 					Ndef(k).source.clear;
 					Ndef(k).clear;
-					this.touchOSC !? {
-						this.touchOSC.addr.sendMsg(TouchOSC.seqNameCmds[i], "");
-						this.touchOSC.addr.sendMsg(TouchOSC.seqAmpCmds[i], 0.0);
-						this.touchOSC.addr.sendMsg(TouchOSC.seqPauseResumeCmds[i], 0.0);
+					keyboard.touchOSC !? {
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[i], "");
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[i], 0.0);
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqPauseResumeCmds[i], 0.0);
 					};
 					pdef.removeAt(i);
 					{

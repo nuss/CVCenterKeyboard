@@ -4,7 +4,7 @@ categories:: Conductor>CVCenter, External Control>MIDI
 related:: Classes/Pattern, Classes/Pdef, Classes/Pbind, Classes/Ppar, Classes/Ndef
 
 DESCRIPTION::
-When creating a new link::Classes/CVCenterKeyboard:: you may have noticed the argument code::addSampler:: in link::Classes/CVCenterKeyboard#*new:: or link::Classes/CVCenterKeyboard#*newSynthDef:: which is by default set to code::true::. I.e. if that argument is left unchanged a new CVCenterKeyboardSampler instance, assigned to your CVCenterKeyboard instance will be created automatically. Now you should be able to "sample" any sequence you play on your keyboard by executing the link::-sample:: method once. Executing this method again will stop recording and the just recorded sequence should play instantly.
+When creating a new link::Classes/CVCenterKeyboard:: you may have noticed the argument code::addSampler:: in link::Classes/CVCenterKeyboard#*new:: or link::Classes/CVCenterKeyboard#*newSynthDef:: which is by default set to code::true::. I.e. if that argument is left unchanged a new CVCenterKeyboardSampler instance, assigned to your CVCenterKeyboard instance will be created automatically. Now you should be able to "sample" any sequence you play on your keyboard by executing the link::#-sample:: method once. Executing this method again will stop recording and the just recorded sequence should play instantly.
 
 First code examples:
 
@@ -23,8 +23,11 @@ SynthDef(\recordTest, {
 }).add;
 )
 
+// create new keyboard
 ~kb = CVCenterKeyboard.newSynthDef(\recordTest);
 
+// confirm dialog before playing
+// empty fields can just be left empty
 (
 ~kb.setUpControls(
 	\recordTest,
@@ -35,7 +38,7 @@ SynthDef(\recordTest, {
 )
 
 // start or stop recording: the instance will remember its state
-// so no additional argument for starting or stopping should be necessary
+// so, no additional argument for starting or stopping should be necessary
 
 // calling 'sample' on the CVCenterKeyboard instance
 // will forward the call to CVCenterKeyboardSampler:-sample
@@ -46,20 +49,25 @@ SynthDef(\recordTest, {
 CLASSMETHODS::
 
 METHOD:: new
+Create a new CVCenterKeyboardSampler instance. It is recommended strong::not:: to use this method directly as you will not be able to use shortcuts assigned to the link::Classes/CVCenterKeyboard:: instance like link::Classes/CVCenterKeyboard#-sample::. Instead, if you have set the argument code::addSampler:: in link::Classes/CVCenterKeyboard#*new:: or link::Classes/CVCenterKeyboard#*newSynthDef:: to code::false::, use link::Classes/CVCenterKeyboard#-addSampler::.
 argument:: keyboard
-argument:: touchOSC
+The link::Classes/CVCenterKeyboard:: instance to which this CVCenterKeyboardSampler instance shall be assigned.
 
 METHOD:: all
+returns:: An link::Classes/Event::, holding all CVCenterKeyboardSampler instances under the names of the parent link::Classes/CVCenterKeyboard:: instances.
 
 INSTANCEMETHODS::
 
 METHOD:: sample
+Start or stop recording keyboard sequences. The CVCenterKeyboardSampler instance should keep track of its state internally (is currently sampling or not), so, the argument code::onOff:: should be optional. However, it might be convenient to tell the recorder explicitly to start or stop in some situations.
 argument:: onOff
+Optional - a link::Classes/Boolean::, instructing the CVCenterKeyboardSampler instance explicitly to start or stop recording.
 
-METHOD:: clearSamples
+METHOD:: clearSequences
+Clear recorded keyboard sequences, either all at once (if no code::keys:: are given) or only those denoted by the argument code::keys::. Sequences are stored in a link::Classes/List:: that can be inspected by calling link::#-pdef::. However, as sequences are held in link::Classes/Pdef::s as link::Classes/Ndef#-source#source:: of an link::Classes/Ndef:: they may also be addressed by the name/key of the regarding Ndef. If code::keys:: are given as link::Classes/Integer::s the method will internally query the correct link::Classes/Ndef:: at the given index.
+If the arument code::keys:: is omitted strong::all:: sequences will be removed.
 argument::  ... keys
-
-METHOD:: touchOSC
+Optional - one or more link::Classes/String::s, link::Classes/Symbol::s or link::Classes/Integer::s addressing the sequence(s) to be removed from the CVCenterKeyboardSampler instance.
 
 METHOD:: pdef
 
