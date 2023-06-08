@@ -1,4 +1,4 @@
-CVCenterKeyboardSampler {
+CVCenterKeyboardRecorder {
 	classvar <all;
 	var <keyboard;
 	var isSampling = false;
@@ -19,11 +19,11 @@ CVCenterKeyboardSampler {
 		var removeAllWdgtName;
 
 		keyboard ?? {
-			"[CVCenterKeyboardSampler] No CVCenterKeyboard instance given!".error;
+			"[CVCenterKeyboardRecorder] No CVCenterKeyboard instance given!".error;
 			^nil
 		};
 		if (keyboard.class != CVCenterKeyboard) {
-			"[CVCenterKeyboardSampler] The given keyboard doesn't appear to be a CVCenterKeyboard instance: %".format(keyboard.class).error;
+			"[CVCenterKeyboardRecorder] The given keyboard doesn't appear to be a CVCenterKeyboard instance: %".format(keyboard.class).error;
 			^nil
 		};
 		all.put(keyboard.keyboardDefName, this);
@@ -33,7 +33,7 @@ CVCenterKeyboardSampler {
 			removeAllWdgtName,
 			'remove all sequences',
 			"{ |cv|
-				if (cv.input.asBoolean) { CVCenterKeyboardSampler.all['%'].clearSequences }
+				if (cv.input.asBoolean) { CVCenterKeyboardRecorder.all['%'].clearSequences }
 			}".format(keyboard.keyboardDefName)
 		);
 		if (keyboard.touchOSC.notNil) {
@@ -44,10 +44,10 @@ CVCenterKeyboardSampler {
 			var offTime;
 
 			keyboard.currentSynthDef ?? {
-				"[CVCenterKeyboardSampler] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
+				"[CVCenterKeyboardRecorder] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
 			};
 			if (keyboard.synthParams.isNil) {
-				"[CVCenterKeyboardSampler] No SynthDef initialized for keyboard yet. Call \"setUpControls\" on your CVCenterKeyboard instance first.".warn;
+				"[CVCenterKeyboardRecorder] No SynthDef initialized for keyboard yet. Call \"setUpControls\" on your CVCenterKeyboard instance first.".warn;
 			} {
 				kbArgs = [
 					keyboard.synthParams[keyboard.currentSynthDef].pitchControl,
@@ -85,7 +85,7 @@ CVCenterKeyboardSampler {
 		sampleOffFunc = { |veloc, num, chan, src|
 			var onTime;
 			keyboard.currentSynthDef ?? {
-				"[]CVCenterKeyboardSampler] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
+				"[]CVCenterKeyboardRecorder] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
 			};
 			if (isSampling) {
 				offTimes[num] = Main.elapsedTime;
@@ -100,8 +100,8 @@ CVCenterKeyboardSampler {
 		keyboard.off.add(sampleOffFunc);
 	}
 
-	// maybe it would be more convenient to have only one method 'sample' with a parameter onOff
-	sample { |onOff|
+	// maybe it would be more convenient to have only one method 'record' with a parameter onOff
+	record { |onOff|
 		var synthDefName, synthParams;
 		var pbproxy, pbinds, /*name,*/ /*group, */last, items/*, index*/;
 		var ampWdgtName, pauseWdgtName, removeWdgtName;
@@ -200,20 +200,25 @@ CVCenterKeyboardSampler {
 		var i;
 
 		if (pdef.notNil and: { pdef.notEmpty }) {
-			if (keys.isNil) {
-				pdef.do { |p, i|
+			if (keys.isEmpty) {
+				pdef.do { |p|
+					i = p.key.asString.split($-).last.asInteger;
 					p.source.clear;
 					p.clear;
 					keyboard.touchOSC !? {
-						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[i], "");
-						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[i], 0.0);
-						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqPauseResumeCmds[i], 0.0);
-					}
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[i-1], "");
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[i-1], 0.0);
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqPauseResumeCmds[i-1], 0.0);
+					};
+					{
+						CVCenter.removeAt(("[%] % amp".format(keyboard.keyboardDefName, p.key)).asSymbol);
+						CVCenter.removeAt(("[%] % pause".format(keyboard.keyboardDefName, p.key)).asSymbol);
+						CVCenter.removeAt(("[%] % remove".format(keyboard.keyboardDefName, p.key)).asSymbol);
+					}.defer;
 				};
-				pdef.removeAll;
+				pdef.clear;
 				// reset counter
 				cSample = 1;
-				CVCenter.removeAtTab("player: %".format(keyboard.keyboardDefName).asSymbol);
 			} {
 				keys.do { |k|
 					if (k.class == String) { k = k.asSymbol };

@@ -1,7 +1,7 @@
 TITLE:: CVCenterKeyboard
 summary:: A MIDI keyboard implementation for CVCenter
 categories:: Conductor>CVCenter, External Control>MIDI
-related:: Classes/CVCenter, Guides/UsingMIDI, Classes/CVCenterKeyboardSampler
+related:: Classes/CVCenter, Guides/UsingMIDI, Classes/CVCenterKeyboardRecorder
 
 DESCRIPTION::
 A CVCenterKeyboard consists of a collection of SynthDefs and provides a convenient way to play them on a MIDI keyboard.
@@ -51,8 +51,8 @@ MIDIClient.sources.do { |source| [source, source.uid].postln };
 (See also: link::Guides/UsingMIDI#MIDIFunc and MIDIdef: Filtering based on device or message data::)
 argument:: chan
 Optional - an link::Classes/Integer:: denoting the MIDI channel the keyboard should use. If omitted the keyboard can be played on any MIDI channel (See also: link::Guides/UsingMIDI#MIDIFunc and MIDIdef: Filtering based on device or message data::)
-argument:: addSampler
-Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::#-sample::. Calling link::#-sample:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardSampler:: for more information on the recording mechanism and the structure of the recorded sequences.
+argument:: addRecorder
+Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::#-record::. Calling link::#-record:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardRecorder:: for more information on the recording mechanism and the structure of the recorded sequences.
 argument:: touchOSCAddr
 Optional - a link::Classes/NetAddr:: instance, refering to an installation of a TouchOSC app on a mobile phone or tablet computer. The device must be in the same network as the computer. The IP address must be the device' IP address, the port is the "incoming" port as set in TouchOSC's OSC setup. Included with the distribution of this class (library) you should find a TouchOSC layout that can be edited in the TouchOSCEditor - download at https://hexler.net/touchosc-mk1#resources . The layout is built for a resolution of 800 x 1280 pixels, so you might have to adapt it to the resolution of your device.
 
@@ -70,8 +70,8 @@ Optional - an link::Classes/Integer:: corresponding to the unique ID of the MIDI
 (See also: link::Guides/UsingMIDI#MIDIFunc and MIDIdef: Filtering based on device or message data::)
 argument:: chan
 Optional - an link::Classes/Integer:: denoting the MIDI channel the keyboard should use. If omitted the keyboard can be played on any MIDI channel (See also: link::Guides/UsingMIDI#MIDIFunc and MIDIdef: Filtering based on device or message data::)
-argument:: addSampler
-Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::#-sample::. Calling link::#-sample:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardSampler:: for more information on the recording mechanism and the structure of the recorded sequences.
+argument:: addRecorder
+Optional - this argument will be set to code::true:: by default and adds a sampler that records all keystrokes on the keyboard upon calling link::#-record::. Calling link::#-record:: again will stop recording and the just recorded sequence will immediately start playing. See link::Classes/CVCenterKeyboardRecorder:: for more information on the recording mechanism and the structure of the recorded sequences.
 argument:: touchOSCAddr
 Optional - a NetAddr instance, refering to an installation of a TouchOSC app on a mobile phone or tablet computer. For detailed description see link::#*new:: argument code::touchOSC::.
 
@@ -239,7 +239,7 @@ METHOD:: freeHangingNodes
 Frees all currently playing link::Classes/Node::s (link::Classes/Synth:: instances) on the link::Classes/Server:: belonging to the CVCenterKeyboard instance. This can be useful if, for some reason, a note "hangs" after releasing a key on the keyboard which could happen e.g. if the server is under heavy load. A CVCenterKeyboard instance will create all its link::Classes/Synth::s in a dedicated link::Classes/Group:: (respectively link::Classes/ParGroup:: if supernova is used as audio engine) which allows control the playing nodes via the group's interface.
 
 METHOD:: addTouchOSC
-Assosciate an instance of link::Classes/CVCenterKeyboardTouchOSC:: which allows the CVCenterKeyboard instance and an assigned link::Classes/CVCenterKeyboardSampler:: instance (if it exists. See also: link::#-addSampler::) to be controlled via pre-defined OSC commands comming and gong to TouchOSC or a different OSC control app installed on some external device within the current network. The link::Classes/CVCenterKeyboardTouchOSC:: instance can also be created by passing a link::Classes/NetAddr:: in the argument code::touchOSC:: when calling link::#*new:: or link::#*newSynthDef::. The link::Classes/CVCenterKeyboardTouchOSC:: instance will be accessible by calling link::#-touchOSC::.
+Assosciate an instance of link::Classes/CVCenterKeyboardTouchOSC:: which allows the CVCenterKeyboard instance and an assigned link::Classes/CVCenterKeyboardRecorder:: instance (if it exists. See also: link::#-addRecorder::) to be controlled via pre-defined OSC commands comming and gong to TouchOSC or a different OSC control app installed on some external device within the current network. The link::Classes/CVCenterKeyboardTouchOSC:: instance can also be created by passing a link::Classes/NetAddr:: in the argument code::touchOSC:: when calling link::#*new:: or link::#*newSynthDef::. The link::Classes/CVCenterKeyboardTouchOSC:: instance will be accessible by calling link::#-touchOSC::.
 argument:: addr
 A class link::Classes/NetAddr::
 
@@ -358,11 +358,11 @@ returns:: The proxy created by calling link::#-addOutProxy::.
 
 SUBSECTION:: Recording sequences
 
-METHOD:: addSampler
-To be able to sample/record keystrokes on the keyboard a link::Classes/CVCenterKeyboardSampler:: has to be assigned. By default this is already done when calling link::#*new:: or link::#*newSynthDef:: if the argument code::addSampler:: hasn't explicitly been set to code::false:: (given that link::Classes/CVCenterKeyboardSampler:: is installed, which should be the case as its part of the CVCenterKeyboard library).
+METHOD:: addRecorder
+To be able to record keystrokes on the keyboard a link::Classes/CVCenterKeyboardRecorder:: has to be assigned. By default this is already done when calling link::#*new:: or link::#*newSynthDef:: if the argument code::addRecorder:: hasn't explicitly been set to code::false:: (given that link::Classes/CVCenterKeyboardRecorder:: is installed, which should be the case as its part of the CVCenterKeyboard library).
 
-METHOD:: sample
-A convenience method for calling link::Classes/CVCenterKeyboardSampler#-sample::.
+METHOD:: record
+A convenience method for calling link::Classes/CVCenterKeyboardRecorder#-record::.
 Calling this method will start (or stop) recording strokes on the external MIDI keyboard into a link::Classes/Pattern:: sequencer. For each note on
 the external keyboard (0-127) a separate link::Classes/Pseq:: is created where code::noteOn:: and code::notOff:: will create a sequence of durations composed of
 numbers (as long as a note is held) and link::Classes/Rest::s. Current control values should also be respected. Each of the recorded notes and the Synth control's
@@ -370,10 +370,10 @@ current values are put into a link::Classes/Pbind:: (128 separate Pbinds) and ge
 The generated sequence should start playing immediately after ending sampling by calling this method again. The resulting Pdefs can be queried with link::#-pdef::.
 You may record as many sequences as you like. Each of them will be stored in a Pdef under a key that is a combination of the SynthDef's name and a numerical counter (e.g. code::Pdef('multi-0')::).
 argument:: onOff
-Optional - by default the link::Classes/CVCenterKeyboardSampler:: should remember its internal state (is it currently sampling or not). The parameter allows you to set the state explicitly.
+Optional - by default the link::Classes/CVCenterKeyboardRecorder:: should remember its internal state (is it currently sampling or not). The parameter allows you to set the state explicitly.
 
 METHOD:: sampler
-returns:: The link::Classes/CVCenterKeyboardSampler:: instance, giving access to all methods of the link::Classes/CVCenterKeyboardSampler:: instance.
+returns:: The link::Classes/CVCenterKeyboardRecorder:: instance, giving access to all methods of the link::Classes/CVCenterKeyboardRecorder:: instance.
 
 SUBSECTION:: Controlling synth controls through busses
 Controls within link::Classes/Synth:: instances created when playing the keyboard may also be controlled through busses.

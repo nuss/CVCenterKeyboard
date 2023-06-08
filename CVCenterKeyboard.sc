@@ -3,7 +3,7 @@ CVCenterKeyboard {
 	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName, <touchOSC;
 	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, wdgtNames, <outProxy;
-	var <sampler, sampling = false, sampleEvents;
+	var <recorder, sampling = false, sampleEvents;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFuncs, <offFuncs, <bendFuncs; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
 	var <>debug = false;
@@ -19,16 +19,16 @@ CVCenterKeyboard {
 		};
 	}
 
-	*new { |keyboardDefName=\keyboard, srcID, chan, addSampler=true, touchOSCAddr|
+	*new { |keyboardDefName=\keyboard, srcID, chan, addRecorder=true, touchOSCAddr|
 		all[keyboardDefName.asSymbol] !? {
 			"A CVCenterKeyboard instance at '%' already exists. Please choose a different name!".format(keyboardDefName).error;
 			^nil;
 		}
-		^super.newCopyArgs(keyboardDefName.asSymbol).init(srcID, chan, addSampler, touchOSCAddr);
+		^super.newCopyArgs(keyboardDefName.asSymbol).init(srcID, chan, addRecorder, touchOSCAddr);
 	}
 
-	*newSynthDef { |synthDefName, keyboardDefName=\keyboard, srcID, chan, addSampler=true, touchOSCAddr|
-		var instance = this.new(keyboardDefName.asSymbol, srcID, chan, addSampler, touchOSCAddr);
+	*newSynthDef { |synthDefName, keyboardDefName=\keyboard, srcID, chan, addRecorder=true, touchOSCAddr|
+		var instance = this.new(keyboardDefName.asSymbol, srcID, chan, addRecorder, touchOSCAddr);
 		synthDefName = synthDefName.asSymbol;
 		if (SynthDescLib.at(synthDefName).notNil) {
 			instance.synthDefNames.add(synthDefName);
@@ -39,7 +39,7 @@ CVCenterKeyboard {
 		}
 	}
 
-	init { |srcID, chan, addSampler, oscAddr|
+	init { |srcID, chan, addRecorder, oscAddr|
 		\CVCenter.asClass ?? {
 			"CVCenterKeyboard depends on CVCenter to be installed. Please install CVCenter before creating a new CVCenterKeyboard instance!".error;
 			^nil;
@@ -69,8 +69,8 @@ CVCenterKeyboard {
 			if (this.debug) { "MIDIFunc.bend initialized properly".postln }
 		}, chan, srcID);
 		#onFuncs, offFuncs, bendFuncs, mappedBusses = ()!4;
-		if (addSampler and: { sampler.isNil }) {
-			sampler = CVCenterKeyboardSampler(this);
+		if (addRecorder and: { recorder.isNil }) {
+			recorder = CVCenterKeyboardRecorder(this);
 		};
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
 	}
@@ -278,11 +278,11 @@ CVCenterKeyboard {
 		this.bend.add(bendFuncs[synthDefName]);
 	}
 
-	sample { |onOff|
-		if (sampler.notNil) {
-			sampler.sample(onOff)
+	record { |onOff|
+		if (recorder.notNil) {
+			recorder.record(onOff)
 		} {
-			"[CVCenterKeyboard] No CVCenterKeyboardSampler instance for the given CVCenterKeyboard instance '%' exists! Create one by calling 'addSampler' on the CVCenterKeyboard instance.".format(keyboardDefName).error
+			"[CVCenterKeyboard] No CVCenterKeyboardRecorder instance for the given CVCenterKeyboard instance '%' exists! Create one by calling 'addRecorder' on the CVCenterKeyboard instance.".format(keyboardDefName).error
 		}
 	}
 
@@ -433,11 +433,11 @@ CVCenterKeyboard {
 	}
 
 	// add the sequencer, fed through sampling keyboard strokes
-	addSampler {
-		if (sampler.isNil) {
-			sampler = CVCenterKeyboardSampler(this);
+	addRecorder {
+		if (recorder.isNil) {
+			recorder = CVCenterKeyboardRecorder(this);
 		} {
-			"[CVCenterKeyboard] The given keyboard '%' has already a sampler assigned.".format(keyboardDefName).error;
+			"[CVCenterKeyboard] The given keyboard '%' has already a recorder assigned.".format(keyboardDefName).error;
 		}
 	}
 

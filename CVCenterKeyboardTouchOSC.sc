@@ -8,7 +8,7 @@ CVCenterKeyboardTouchOSC {
 	*initClass {
 		all = ();
 		this.seqNameCmds = (1..24).collect { |i| "/seq_%_name".format(i) };
-		this.seqAmpCmds = (1..24).collect { |i| "/seq_%_amp".format(1) };
+		this.seqAmpCmds = (1..24).collect { |i| "/seq_%_amp".format(i) };
 		this.seqPauseResumeCmds = (1..24).collect { |i| "/seq_%_pause_resume".format(i) };
 		this.seqRemoveCmds = (1..24).collect { |i| "/seq_%_remove".format(i) };
 	}
