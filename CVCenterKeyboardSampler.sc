@@ -232,10 +232,11 @@ CVCenterKeyboardSampler {
 					};
 					pdef.removeAt(i);
 					{
-						CVCenter.removeAt(("% amp".format(k)).asSymbol);
-						CVCenter.removeAt(("% pause".format(k)).asSymbol);
-						CVCenter.removeAt(("% remove".format(k)).asSymbol);
-					}.defer
+						CVCenter.removeAt(("[%] % amp".format(keyboard.keyboardDefName, k)).asSymbol);
+						CVCenter.removeAt(("[%] % pause".format(keyboard.keyboardDefName, k)).asSymbol);
+						CVCenter.removeAt(("[%] % remove".format(keyboard.keyboardDefName, k)).asSymbol);
+					}.defer;
+					if (pdef.size == 0) { cSample = 1 };
 				};
 			}
 		}
