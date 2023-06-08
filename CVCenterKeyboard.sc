@@ -3,7 +3,7 @@ CVCenterKeyboard {
 	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName, <touchOSC;
 	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, wdgtNames, <outProxy;
-	var <>sampler, sampling = false, sampleEvents;
+	var <sampler, sampling = false, sampleEvents;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFuncs, <offFuncs, <bendFuncs; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
 	var <>debug = false;
@@ -19,15 +19,27 @@ CVCenterKeyboard {
 		};
 	}
 
-	*new { |keyboardDefName=\keyboard, srcID, chan, addSampler=true, touchOSC|
+	*new { |keyboardDefName=\keyboard, srcID, chan, addSampler=true, touchOSCAddr|
 		all[keyboardDefName.asSymbol] !? {
-			"A CVCenterKeyboard instance at '%' already exists. Please choose a different name!".error;
+			"A CVCenterKeyboard instance at '%' already exists. Please choose a different name!".format(keyboardDefName).error;
 			^nil;
 		}
-		^super.newCopyArgs(keyboardDefName.asSymbol).init(srcID, chan, addSampler, touchOSC);
+		^super.newCopyArgs(keyboardDefName.asSymbol).init(srcID, chan, addSampler, touchOSCAddr);
 	}
 
-	init { |srcID, chan, addSampler, touchOSC|
+	*newSynthDef { |synthDefName, keyboardDefName=\keyboard, srcID, chan, addSampler=true, touchOSCAddr|
+		var instance = this.new(keyboardDefName.asSymbol, srcID, chan, addSampler, touchOSCAddr);
+		synthDefName = synthDefName.asSymbol;
+		if (SynthDescLib.at(synthDefName).notNil) {
+			instance.synthDefNames.add(synthDefName);
+			instance.addSynthDef(synthDefName);
+			^instance;
+		} {
+			"No SynthDef found for the given synthDefName".error;
+		}
+	}
+
+	init { |srcID, chan, addSampler, oscAddr|
 		\CVCenter.asClass ?? {
 			"CVCenterKeyboard depends on CVCenter to be installed. Please install CVCenter before creating a new CVCenterKeyboard instance!".error;
 			^nil;
@@ -44,8 +56,8 @@ CVCenterKeyboard {
 				"MIDIIn.connectAll failed. Please establish the necessary connections manually".warn;
 			}
 		};
-		if (touchOSC.notNil and: { touchOSC.class == NetAddr }) {
-			touchOSC = TouchOSC(keyboardDefName, touchOSC)
+		if (oscAddr.notNil and: { oscAddr.class == NetAddr }) {
+			touchOSC = CVCenterKeyboardTouchOSC(keyboardDefName, oscAddr)
 		};
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			if (this.debug) { "MIDIFunc.noteOn initialized properly".postln }
@@ -58,10 +70,7 @@ CVCenterKeyboard {
 		}, chan, srcID);
 		#onFuncs, offFuncs, bendFuncs, mappedBusses = ()!4;
 		if (addSampler and: { sampler.isNil }) {
-			CVCenterKeyboardSampler(this);
-			touchOSC !? {
-				this.sampler.touchOSC = touchOSC;
-			}
+			sampler = CVCenterKeyboardSampler(this);
 		};
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
 	}
@@ -74,7 +83,7 @@ CVCenterKeyboard {
 			};
 			this.prInitSynthDef(synthDefName);
 		} {
-			"No SynthDef found for the given synthDefName".error;
+			"[CVCenterKeyboard] No SynthDef found for the given synthDefName".error;
 		}
 	}
 
@@ -91,18 +100,6 @@ CVCenterKeyboard {
 
 	*at { |keyboardDefName|
 		^all[keyboardDefName.asSymbol]
-	}
-
-	*newSynthDef { |synthDefName, keyboardDefName=\keyboard, srcID, chan, addSampler=true, touchOSC|
-		var instance = this.new(keyboardDefName.asSymbol, srcID, chan, addSampler, touchOSC);
-		synthDefName = synthDefName.asSymbol;
-		if (SynthDescLib.at(synthDefName).notNil) {
-			instance.synthDefNames.add(synthDefName);
-			instance.addSynthDef(synthDefName);
-			^instance;
-		} {
-			"No SynthDef found for the given synthDefName".error;
-		}
 	}
 
 	prInitSynthDef { |synthDefName|
@@ -285,7 +282,7 @@ CVCenterKeyboard {
 		if (sampler.notNil) {
 			sampler.sample(onOff)
 		} {
-			"No CVCenterKeyboardSampler instance for the given CVCenterKeyboard instance exists! Create one by calling 'addSampler' on the CVCenterKeyboard instance.".error
+			"[CVCenterKeyboard] No CVCenterKeyboardSampler instance for the given CVCenterKeyboard instance '%' exists! Create one by calling 'addSampler' on the CVCenterKeyboard instance.".format(keyboardDefName).error
 		}
 	}
 
@@ -438,9 +435,17 @@ CVCenterKeyboard {
 	// add the sequencer, fed through sampling keyboard strokes
 	addSampler {
 		if (sampler.isNil) {
-			CVCenterKeyboardSampler(this);
+			sampler = CVCenterKeyboardSampler(this);
 		} {
-			"The given keyboard '%' has already a sampler assigned.".format(keyboardDefName).error;
+			"[CVCenterKeyboard] The given keyboard '%' has already a sampler assigned.".format(keyboardDefName).error;
+		}
+	}
+
+	addTouchOSC { |addr|
+		if (addr.class != NetAddr) {
+			Error("The given argument doesn't appear to be a valid NetAddr").throw;
+		} {
+			touchOSC = CVCenterKeyboardTouchOSC(keyboardDefName, addr);
 		}
 	}
 
