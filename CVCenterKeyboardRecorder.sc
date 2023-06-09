@@ -64,7 +64,6 @@ CVCenterKeyboardRecorder {
 					onTimes[num] = Main.elapsedTime;
 					argsValues.pairsDo { |k, v|
 						sampleEvents[num][k] ?? {
-							if (this.debug) { [k, v].postln };
 							sampleEvents[num].put(k, [])
 						};
 						if (v.size > 1) {
@@ -72,7 +71,8 @@ CVCenterKeyboardRecorder {
 							sampleEvents[num][k] = sampleEvents[num][k].add([v]);
 						} {
 							sampleEvents[num][k] = sampleEvents[num][k].add(v);
-						}
+						};
+						if (this.debug) { [k, v].postln };
 					};
 					sampleEvents[num].dur ?? {
 						sampleEvents[num].put(\dur, []);
