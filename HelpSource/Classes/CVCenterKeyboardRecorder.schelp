@@ -44,6 +44,10 @@ SynthDef(\recordTest, {
 // will forward the call to CVCenterKeyboardRecorder:-record
 
 ~kb.record
+
+// check what's being recorded
+// activate *before* you start recording!
+~kb.recorder.debug_(true)
 ::
 
 CLASSMETHODS::
@@ -59,7 +63,12 @@ returns:: An link::Classes/Event::, holding all CVCenterKeyboardRecorder instanc
 INSTANCEMETHODS::
 
 METHOD:: record
-Start or stop recording keyboard sequences. The CVCenterKeyboardRecorder instance should keep track of its state internally (is currently sampling or not), so, the argument code::onOff:: should be optional. However, it might be convenient to tell the recorder explicitly to start or stop in some situations.
+Calling this method will start (or stop) recording strokes on the external MIDI keyboard into a link::Classes/Pattern:: sequencer. For each note on
+the external keyboard (0-127) a separate link::Classes/Pseq:: is created where code::noteOn:: and code::notOff:: will create a sequence of durations composed of
+numbers (as long as a note is held) and link::Classes/Rest::s. Current control values should also be respected. Each of the recorded notes and the Synth control's
+current values are put into a link::Classes/Pbind:: (128 separate Pbinds) and get wrapped into a link::Classes/Ppar:: which in turn gets wrapped in a link::Classes/Pdef:: instance which is then set as source of an link::Classes/Ndef:: instance.
+The generated sequence should start playing immediately after ending sampling by calling this method again. The resulting Pdefs can be queried with link::#-pdef::.
+You may record as many sequences as you like. Each of them will be stored in a Pdef under a key that is a combination of the SynthDef's name and a numerical counter (e.g. code::Pdef('multi-0')::).
 argument:: onOff
 Optional - a link::Classes/Boolean::, instructing the CVCenterKeyboardRecorder instance explicitly to start or stop recording.
 
@@ -70,16 +79,53 @@ argument::  ... keys
 Optional - one or more link::Classes/String::s, link::Classes/Symbol::s or link::Classes/Integer::s addressing the sequence(s) to be removed from the CVCenterKeyboardRecorder instance.
 
 METHOD:: pdef
+returns:: A link::Classes/List::, holding all currently recorded keyboard sequences.
 
 METHOD:: keyboard
+returns:: The link::Classes/CVCenterKeyboard:: the CVCenterKeyboardRecorder instance has been assigned to.
 
 METHOD:: debug
+If set to code::true:: the following will be posted:
+LIST::
+## the "On time": the moment at which you press a key
+## the "Off times": the moment at which you release a key
+## keys and values just recorded
+::
 
-PRIVATE:: initClass, init, prAddCVActions, prResetSampling
+SECTION:: Controlling sequences over OSC
+As described in link::Classes/CVCenterKeyboard#*new:: and link::Classes/CVCenterKeyboard#*newSynthDef::, respectively link::Classes/CVCenterKeyboard#-addTouchOSC:: you may add control through an external OSC device or application. The properties of this connection are held in an instance of link::Classes/CVCenterKeyboardTouchOSC::. Though this class refers to the infamous TouchOSC application for Android and iOS it is strong::not:: necessarily required to use TouchOSC. However, when you install CVCenterKeyboard (the library) it should also contain a TouchOSC layout that should work out of the box with link::Classes/CVCenterKeyboard::. If you prefer a different application that uses other OSC commands you may configure link::Classes/CVCenterKeyboardTouchOSC:: or its instances to respond to and send suiting your application.
 
-
-EXAMPLES::
+When working with an external OSC controller you will have to provide a link::Classes/NetAddr:: either when instanciating a new link::Classes/CVCenterKeyboard:: or add a link::Classes/CVCenterKeyboardTouchOSC:: instance using that specific link::Classes/NetAddr:: instance to your link::Classes/CVCenterKeyboard:: instance:
 
 code::
-_some_example_code_
+// three different ways of adding external OSC control
+myKeyboard = CVCenterKeyboard(keyboardDefName: <some keyboard name>, touchOSCAddr: <a NetAddr instance>);
+myKeyboard = CVCenterKeyboard.newSynthDef(keyboardDefName: <some keyboard name>, synthDefName: <some SynthDef name>, touchOSCAddr: <a NetAddr instance>);
+myKeyboard.addTouchOSC(<a NetAddr instance>);
 ::
+
+As soon as you have instanciated your keyboard a new tab labeled
+
+code::player: <keyboard name>::
+
+will appear in the link::Classes/CVCenter:: gui, holding one widget (representing an instance of link::Classes/CVWidgetKnob::), labeled like the following:
+
+code::[<keyboard name>] remove all sequences::
+
+After having recorded a first sequence on your keyboard the tab in the link::Classes/CVCenter:: gui will hold three more widgts, labeled like the following:
+LIST::
+## code::[<keyboard name>] <SynthDef name>-<sequence number> amp::
+## code::[<keyboard name>] <SynthDef name>-<sequence number> pause::
+## code::[<keyboard name>] <SynthDef name>-<sequence number> remove::
+::
+
+With each new sequence three more widgets of that kind will be added to the tab.
+
+If a link::Classes/CVCenterKeyboardTouchOSC:: instance is present these widgets strong::will automatically be connected:: to the TouchOSC layout included with the CVCenterKeyboard library (if you have installed TouchOSC and uploaded the layout to TouchOSC). The first widget will let you set the amplitude of the recorded sequence, the second will let you pause/resume the sequence and the third one will let you remove a recorded sequence.
+
+The widget labeled code::[<keyboard name>] remove all sequences:: removes all recorded sequences at once, all their associated widgets and resets the CVCenterKeyboardRecorder instance. However, this widget will prevail as it will also work with all future sequences.
+
+
+
+
+PRIVATE:: initClass, init, prAddCVActions, prResetSampling
