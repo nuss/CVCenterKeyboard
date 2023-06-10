@@ -56,7 +56,7 @@ Optional - this argument will be set to code::true:: by default and adds a sampl
 argument:: touchOSCAddr
 Optional - a link::Classes/NetAddr:: instance, refering to an installation of a TouchOSC app on a mobile phone or tablet computer. The device must be in the same network as the computer. The IP address must be the device' IP address, the port is the "incoming" port as set in TouchOSC's OSC setup. Included with the distribution of this class (library) you should find a TouchOSC layout that can be edited in the TouchOSCEditor - download at https://hexler.net/touchosc-mk1#resources . The layout is built for a resolution of 800 x 1280 pixels, so you might have to adapt it to the resolution of your device.
 
-NOTE:: You might want to use a different OSC app for control, using different OSC command names. Though the class is named link::Classes/TouchOSC:: it is not necessarily bound to the TouchOSC app. You should be able to set your own command names, either in the class or one of its instances.
+NOTE:: You might want to use a different OSC app for control, using different OSC command names. Though the class is named link::Classes/CVCenterKeyboardTouchOSC:: it is not necessarily bound to the TouchOSC app. You should be able to set your own command names, either in the class or one of its instances. See link::Classes/CVCenterKeyboardTouchOSC#Predefined OSC commands:: or link::Classes/CVCenterKeyboardTouchOSC#Predefined OSC commands in instances::
 ::
 
 METHOD:: newSynthDef

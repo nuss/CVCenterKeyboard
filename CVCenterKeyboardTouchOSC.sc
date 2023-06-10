@@ -1,9 +1,8 @@
 CVCenterKeyboardTouchOSC {
 	classvar <all;
 	classvar <>seqNameCmds, <>seqAmpCmds, <>seqPauseResumeCmds, <>seqRemoveCmds, <>seqRemoveAllCmd = "/seq_remove_all";
-	var <name, <addr;
+	var <keyboard, <addr;
 	var seqNameCmds, seqAmpCmds, seqPauseResumeCmds, seqRemoveCmds, seqRemoveAllCmd;
-	var <>debug = false;
 
 	*initClass {
 		all = ();
@@ -13,14 +12,13 @@ CVCenterKeyboardTouchOSC {
 		this.seqRemoveCmds = (1..24).collect { |i| "/seq_%_remove".format(i) };
 	}
 
-	*new { |name, addr|
-		name = name.asSymbol;
-		^super.newCopyArgs(name, addr).init;
+	*new { |keyboard, addr|
+		^super.newCopyArgs(keyboard, addr).init;
 	}
 
 	init {
-		all.put(name, this);
-		"\nNew TouchOSC instance added: '%', NetAddr: %\n".format(name, addr).inform;
+		all.put(keyboard.keyboardDefName, this);
+		"\nNew TouchOSC instance added: '%', NetAddr: %\n".format(keyboard.keyboardDefName, addr).inform;
 	}
 
 	seqNameCmds {

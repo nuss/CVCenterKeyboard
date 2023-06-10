@@ -123,7 +123,7 @@ With each new sequence three more widgets of that kind will be added to the tab.
 
 If a link::Classes/CVCenterKeyboardTouchOSC:: instance is present these widgets strong::will automatically be connected:: to the TouchOSC layout included with the CVCenterKeyboard library (if you have installed TouchOSC and uploaded the layout to TouchOSC). The first widget will let you set the amplitude of the recorded sequence, the second will let you pause/resume the sequence and the third one will let you remove a recorded sequence.
 
-The widget labeled code::[<keyboard name>] remove all sequences:: removes all recorded sequences at once, all their associated widgets and resets the CVCenterKeyboardRecorder instance. However, this widget will prevail as it will also work with all future sequences.
+The widget labeled code::[<keyboard name>] remove all sequences:: removes all recorded sequences at once, all their associated widgets and resets the CVCenterKeyboardRecorder instance. This widget will prevail even if you remove all sequences and their associated widget as it will also work with all future sequences.
 
 
 

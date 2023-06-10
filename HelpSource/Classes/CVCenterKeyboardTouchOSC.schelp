@@ -1,0 +1,103 @@
+TITLE:: CVCenterKeyboardTouchOSC
+summary:: A utility addon for CVCenterKeyboard,meant to simplitfy external OSC control
+categories:: Conductor>CVCenter, External Control>OSC
+related:: Classes/CVCenterKeyboard, Classes/CVCenterKeyboardRecorder
+
+DESCRIPTION::
+CVCenterKeyboardTouchOSC is a simple utility whose instances hold a link::Classes/NetAddr:: referring to an external OSC device or application in the same network as the computer SuperCollider is running on. When you create a new link::Classes/CVCenterKeyboard:: instance a CVCenterKeyboardTouchOSC instance can be added in the link::Classes/CVCenterKeyboard#*new#new:: constructor, in link::Classes/CVCenterKeyboard#*newSynthDef#newSynthDef:: or by calling link::Classes/CVCenterKeyboard#-addTouchOSC#addTouchOSC:: on the CVCenterKeyboard instance.
+
+CVCenterKeyboardTouchOSC was written having the popular TouchOSC appliction in mind. A TouchOSC layout that should work out of the box with link::Classes/CVCenterKeyboard::, respectively link::Classes/CVCenterKeyboardRecorder:: is included with the CVCenterKeyboard library. To upload this layout to TouchOSC you will need the TouchOSC layout editor: https://hexler.net/touchosc-mk1#resources
+
+First code examples:
+
+code::
+// a simple SynthDef
+(
+SynthDef(\oscTest, {
+	var env = EnvGen.ar(
+		Env.adsr(\atk.kr(0.01), \dec.kr(0.3), \sust.kr(0.5), \rel.kr(0.7)),
+		\gate.kr(1), // we need a gated envelope!
+		doneAction: Done.freeSelf // free the Synth when done
+	);
+	var freq = \freq.kr(220);
+	var son = SinOsc.ar([freq, freq+1]);
+	Out.ar(\out.kr(0), son * \veloc.kr(1) * \amp.kr(0.5) * env);
+}).add;
+)
+
+// create new keyboard and add a CVCenterKeyboardTouchOSC instance
+// adapt IP address to your needs
+// port is the port under which TouchOSC will be *listening* to incoming messages
+~kb = CVCenterKeyboard.newSynthDef(\oscTest, touchOSCAddr: NetAddr("192.168.0.22", 9000));
+
+// return the CVCenterKeyboardTouchOSC instance
+~kb.touchOSC;
+// -> a CVCenterKeyboardTouchOSC
+::
+
+CLASSMETHODS::
+
+METHOD:: new
+Create a new CVCenterKeyboardTouchOSC instance. It is strong::not:: recommended to use this method directly as the new instance will not be stored in the instance var link::Classes/CVCenterKeyboard#-touchOSC::. Rather create the instance in the link::Classes/CVCenterKeyboard#*new:: constructor, link::CVCenterKeyboard#*newSynthDef:: or a call to link::Classes/CVCenterKeyboard#-addTouchOSC::.
+argument:: keyboard
+The link::Classes/CVCenterKeyboard:: instance to which the instance shall be added.
+argument:: addr
+A link::Classes/NetAddr:: referring to the IP address of the external OSC device or application and the strong::listening:: port of the device or application.
+
+METHOD:: all
+returns:: An link::Classes/Event:: holding all current CVCenterTouchOSC instances.
+
+SUBSECTION:: Predefined OSC commands
+The included TouchOSC layout will work with a few predefined OSC commands that are also reflected in this class' classvars. Each of the following are getters and setters, meaning you may adapt them according to your needs. E.g. the commands stored in code::CVCenterKeyboardTouchOSC.seqAmpCmds:: will allow you to set the amplitude of sequences recorded by a link::Classes/CVCenterKeyboardRecorder::. By default there are 24 for up to 24 different sequences defined. You may wish to in- or decrease that number or change the commands itself:
+
+code::
+// return an array of 24 commands ranging from "/seq_1_amp" to "/seq_24_amp"
+CVCenterKeyboardTouchOSC.seqAmpCmds;
+// reduce number of commands to 10 and change name to "/seq/amp/1" to "/seq/amp/10"
+CVCenterKeyboardTouchOSC.seqAmpCmds_((1..10).collect({ |i| "/seq/amp/" ++ i }));
+::
+
+The above described calls can also be place in the startup file to make changes permanent.
+
+METHOD:: seqAmpCmds
+Set or get the class-wide commands for setting the amplitudes of sequences recorded by a link::Classes/CVCenterKeyboardRecorder:: instance.
+
+METHOD:: seqPauseResumeCmds
+Set or get the class-wide commands for pausing and resuming sequences recorded by a link::Classes/CVCenterKeyboardRecorder:: instance.
+
+METHOD:: seqNameCmds
+Set or get the class-wide commands for setting the names of sequences recorded by a link::Classes/CVCenterKeyboardRecorder:: instance in TouchOSC's user interface (the name will appear as a label on the sequence's amplitude slider).
+
+METHOD:: seqRemoveCmds
+Set or get the class-wide commands for removing sequences recorded by a link::Classes/CVCenterKeyboardRecorder:: instance.
+
+METHOD:: seqRemoveAllCmd
+Contrary to all other afor described classvars this is only a single commend which will remove all sequences recorded by a link::Classes/CVCenterKeyboardRecorder:: instance at once.
+
+INSTANCEMETHODS::
+
+METHOD:: keyboard
+returns:: The link::Classes/CVCenterKeyboard:: instance the CVCenterKeyboardTouchOSC instance has been assigned to.
+
+METHOD:: addr
+returns:: The instance's link::Classes/NetAddr::, referring to the IP address of the external OSC device or application.
+
+SUBSECTION:: Predefined OSC commands in instances
+The following instance vars (all of the are getters strong::and:: setters) work analog to their equivalent classvars. You may have more than one link::Classes/CVCenterKeyboard:: instance defined, for which you need different OSC command names (or namespaces).
+
+METHOD:: seqNameCmds
+argument:: cmdsList
+
+METHOD:: seqRemoveCmds
+argument:: cmdsList
+
+METHOD:: seqAmpCmds
+argument:: cmdsList
+
+METHOD:: seqRemoveAllCmd
+argument:: cmd
+
+METHOD:: seqPauseResumeCmds
+argument:: cmdsList
+
+PRIVATE:: initClass, init
