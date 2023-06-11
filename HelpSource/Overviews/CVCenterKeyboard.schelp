@@ -1,0 +1,14 @@
+TITLE:: CVCenterKeyboard
+SUMMARY:: A library allowing you to play your SynthDefs on a MIDI keyboard
+CATEGORIES:: CVCenter, External Control>MIDI
+
+CVCenterKeyboard is based on a MIDI keyboard concept explained in link::Guides/UsingMIDI#MIDIIn::, extended by the possibility to not only play notes on a keyboard but also control other parameters with sliders, knobs and other GUI elements, respectively, if you are using external control devices, you may connect them using MIDI or OSC. This is accomplished by integrating link::Overviews/CVCenter:: as a dependency.
+
+CVCenterKeyboard is under ongoing development. So far it lets you create one or more keyboard definitiontions of which each can contain an arbitrary number of link::Classes/SynthDef::s. Moreover link::Classes/CVCenterKeyboardRecorder:: lets you record sequences of what you play on the keyboard. These sequences will be played as soon as you have finished recording them but can, however, be paused, silenced, removed or manipuleted in other ways. In future versions you should be able to distribute more than one link::Classes/SynthDef:: among the physical keys of your keyboard and the manipulation of already sequences should be improved.
+
+So far the library consists of the following classes:
+LIST::
+## link::Classes/CVCenterKeyboard:: - the main and name-giving class of this library
+## link::Classes/CVCenterKeyboardRecorder:: - the recorder and player for keyboard sequences
+## link::Classes/CVCenterKeyboardTouchOSC:: - a utility for handling OSC, mainly used for sequences. Not necessarily bound to the TouchOSC application the class has been written to work out of the box with a layout file code::CVCenterKeyboard.touchOSC:: included with this library. You will need strong::TouchOSC MK1:: and the TouchOSC layout editor, downloadable at https://hexler.net/touchosc-mk1#resources (as the layout is built for a resolution of 800 x 1280 pixels you may have to adapt it for the resolution of your device).
+::
