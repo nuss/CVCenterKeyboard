@@ -1,7 +1,7 @@
 (
 	name: "CVCenterKeyboard",
 	summary: "An extension for CVCenter, allowing to create MIDI keyboards from arbitrary 'gated' SynthDefs ('gated' = SynthDefs with an envelope that has a 'gate' argument",
-	version: "0.1.0",
+	version: "0.2.0",
 	schelp: "CVCenterKeyboard",
 	dependencies: ["CVCenter", "CVmin", "TabbedView2", "wslib"],
 	copyright: "Stefan Nussbaumer",
