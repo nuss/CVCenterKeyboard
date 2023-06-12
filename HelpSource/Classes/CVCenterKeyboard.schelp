@@ -98,19 +98,19 @@ argument:: synthDefName
 A link::Classes/String:: or an link::Classes/Symbol::, denoting the name of the SynthDef.
 
 METHOD:: setUpControls
-Whenever a new link::Classe/SynthDef:: is added, either by creating a new instance by calling link::#*newSynthDef:: or adding a link::Classe/SynthDef:: with link::#-addSynthDef::, the CVCenterKeyboard instance must be set up for the new link::Classe/SynthDef::. This will configure code::outControl::, code::keyboardControl:: and code::bendControl:: as well as it will create link::Classes/CVWidget::s for all other controls in the  link::Classe/SynthDef::. It should be possible to call this method repeatedly, so you can update an existing link::Classe/SynthDef:: while it's already being used.
+Whenever a new link::Classe/SynthDef:: is added, either by creating a new instance by calling link::#*newSynthDef:: or adding a link::Classe/SynthDef:: with link::#-addSynthDef::, the CVCenterKeyboard instance must be set up for the new link::Classe/SynthDef::. This will configure code::outControl::, code::keyboardControl::, code::velocControl:: and code::bendControl:: as well as it will create link::Classes/CVWidget::s for all other controls in the  link::Classe/SynthDef::. It should be possible to call this method repeatedly, so you can update an existing link::Classe/SynthDef:: while it's already being used.
 argument:: synthDefName
 The link::Classes/SynthDef::'s name, given as link::Classes/Symbol:: or link::Classes/String::
 argument:: prefix
 An optional link::Classes/Symbol:: or link::Classes/String:: for link::Classes/CVCenter::, to make sure the resulting widgets get a unique name.
 argument:: pitchControl
-A link::Classes/Symbol:: or link::Classes/String:: denoting the keyboard key, incoming note. Default: code::\freq::.
+A link::Classes/Symbol:: or link::Classes/String:: referencing the keyboard key, incoming note. Default: code::\freq::.
 argument:: velocControl
-A link::Classes/Symbol:: or link::Classes/String:: denoting velocity coming with the note. Default: code::\veloc::.
+A link::Classes/Symbol:: or link::Classes/String:: referencing velocity (the physical pressure on a keyboard key) coming with the note. Default: code::\veloc::.
 argument:: bendControl
-A link::Classes/Symbol:: or link::Classes/String:: denoting the control to be set by the pitch bend wheel. Default: code::\bend::.
+A link::Classes/Symbol:: or link::Classes/String:: referencing the control to be set by the pitch bend wheel. Default: code::\bend::.
 argument:: outControl
-A link::Classes/Symbol:: or link::Classes/String:: denoting the output bus. Default: code::\out::.
+A link::Classes/Symbol:: or link::Classes/String:: referencing the output bus. Default: code::\out::.
 argument:: includeInCVCenter
 An link::Classes/Array:: of link::Classes/Symbol::s or link::Classes/String::s, denoting those of the before described arguments which emphasis::should:: appear in link::Classes/CVCenter:: though they have already been assigned to the keyboard.
 argument:: theServer
