@@ -370,7 +370,7 @@ Optional - by default the link::Classes/CVCenterKeyboardRecorder:: should rememb
 METHOD:: recorder
 returns:: The link::Classes/CVCenterKeyboardRecorder:: instance, giving access to all methods of the link::Classes/CVCenterKeyboardRecorder:: instance.
 
-SUBSECTION:: Controlling synth controls through busses
+SUBSECTION:: Setting synth controls through busses
 Controls within link::Classes/Synth:: instances created when playing the keyboard may also be controlled through busses.
 
 code::

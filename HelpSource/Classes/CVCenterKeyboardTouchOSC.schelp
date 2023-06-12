@@ -38,7 +38,7 @@ SynthDef(\oscTest, {
 CLASSMETHODS::
 
 METHOD:: new
-Create a new CVCenterKeyboardTouchOSC instance. It is strong::not:: recommended to use this method directly as the new instance will not be stored in the instance var link::Classes/CVCenterKeyboard#-touchOSC::. Rather create the instance in the link::Classes/CVCenterKeyboard#*new:: constructor, link::CVCenterKeyboard#*newSynthDef:: or a call to link::Classes/CVCenterKeyboard#-addTouchOSC::.
+Create a new CVCenterKeyboardTouchOSC instance. It is strong::not:: recommended to use this method directly as the new instance will not be stored in the instance var link::Classes/CVCenterKeyboard#-touchOSC::. Rather create the instance in the link::Classes/CVCenterKeyboard#*new:: constructor, link::Classes/CVCenterKeyboard#*newSynthDef:: or a call to link::Classes/CVCenterKeyboard#-addTouchOSC::.
 argument:: keyboard
 The link::Classes/CVCenterKeyboard:: instance to which the instance shall be added.
 argument:: addr

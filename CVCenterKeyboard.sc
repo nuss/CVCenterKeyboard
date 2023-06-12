@@ -57,7 +57,7 @@ CVCenterKeyboard {
 			}
 		};
 		if (oscAddr.notNil and: { oscAddr.class == NetAddr }) {
-			touchOSC = CVCenterKeyboardTouchOSC(keyboardDefName, oscAddr)
+			touchOSC = CVCenterKeyboardTouchOSC(this, oscAddr)
 		};
 		on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 			if (this.debug) { "MIDIFunc.noteOn initialized properly".postln }
@@ -445,7 +445,7 @@ CVCenterKeyboard {
 		if (addr.class != NetAddr) {
 			Error("The given argument doesn't appear to be a valid NetAddr").throw;
 		} {
-			touchOSC = CVCenterKeyboardTouchOSC(keyboardDefName, addr);
+			touchOSC = CVCenterKeyboardTouchOSC(this, addr);
 		}
 	}
 

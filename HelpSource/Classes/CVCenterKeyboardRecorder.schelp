@@ -42,7 +42,6 @@ SynthDef(\recordTest, {
 
 // calling 'record' on the CVCenterKeyboard instance
 // will forward the call to CVCenterKeyboardRecorder:-record
-
 ~kb.record
 
 // check what's being recorded
@@ -68,7 +67,7 @@ the external keyboard (0-127) a separate link::Classes/Pseq:: is created where c
 numbers (as long as a note is held) and link::Classes/Rest::s. Current control values should also be respected. Each of the recorded notes and the Synth control's
 current values are put into a link::Classes/Pbind:: (128 separate Pbinds) and get wrapped into a link::Classes/Ppar:: which in turn gets wrapped in a link::Classes/Pdef:: instance which is then set as source of an link::Classes/Ndef:: instance.
 The generated sequence should start playing immediately after ending sampling by calling this method again. The resulting Pdefs can be queried with link::#-pdef::.
-You may record as many sequences as you like. Each of them will be stored in a Pdef under a key that is a combination of the SynthDef's name and a numerical counter (e.g. code::Pdef('multi-0')::).
+You may record as many sequences as you like. Each of them will be stored in a Pdef under a key that is a combination of the SynthDef's name and a numerical counter (e.g. code::Pdef('multi-1')::).
 argument:: onOff
 Optional - a link::Classes/Boolean::, instructing the CVCenterKeyboardRecorder instance explicitly to start or stop recording.
 
