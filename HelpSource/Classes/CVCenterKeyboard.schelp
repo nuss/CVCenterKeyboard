@@ -98,7 +98,7 @@ argument:: synthDefName
 A link::Classes/String:: or an link::Classes/Symbol::, denoting the name of the SynthDef.
 
 METHOD:: setUpControls
-Whenever a new SynthDef is added, either by creating a new instance by calling code::CVCenter.Keyboard.newSynthDef:: or adding a SynthDef with link::#-addSynthDef::, the CVCenterKeyboard instance must be set up for the new SynthDef. This will configure code::outControl::, code::keyboardControl:: and code::bendControl:: as well as it will create link::Classes/CVWidget::s for all other controls in the SynthDef.
+Whenever a new link::Classe/SynthDef:: is added, either by creating a new instance by calling link::#*newSynthDef:: or adding a link::Classe/SynthDef:: with link::#-addSynthDef::, the CVCenterKeyboard instance must be set up for the new link::Classe/SynthDef::. This will configure code::outControl::, code::keyboardControl:: and code::bendControl:: as well as it will create link::Classes/CVWidget::s for all other controls in the  link::Classe/SynthDef::. It should be possible to call this method repeatedly, so you can update an existing link::Classe/SynthDef:: while it's already being used.
 argument:: synthDefName
 The link::Classes/SynthDef::'s name, given as link::Classes/Symbol:: or link::Classes/String::
 argument:: prefix
