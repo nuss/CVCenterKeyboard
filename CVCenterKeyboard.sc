@@ -31,7 +31,6 @@ CVCenterKeyboard {
 		var instance = this.new(keyboardDefName.asSymbol, srcID, chan, addRecorder, touchOSCAddr);
 		synthDefName = synthDefName.asSymbol;
 		if (SynthDescLib.at(synthDefName).notNil) {
-			instance.synthDefNames.add(synthDefName);
 			instance.addSynthDef(synthDefName);
 			^instance;
 		} {
