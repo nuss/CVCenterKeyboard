@@ -65,4 +65,3 @@ Quarks.install("https://github.com/nuss/CVCenterKeyboard")
 from within SuperCollider if you have set up Git on your computer. If not, download the ZIP archive and unzip it to your SuperCollider user extensions folder.
 
 After having copied all files recompile the SuperCollider class library to make CVCenterKeyboard (and all othe classes) being recognized and usable.
-
