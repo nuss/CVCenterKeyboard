@@ -3,6 +3,7 @@ CVCenterKeyboard {
 	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName, <touchOSC;
 	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, wdgtNames, <outProxy;
+	var <distribution, <>keyBlockSize=24;
 	var <recorder, sampling = false, sampleEvents;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFuncs, <offFuncs, <bendFuncs; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
@@ -46,6 +47,11 @@ CVCenterKeyboard {
 		all.put(keyboardDefName, this);
 		group = ParGroup.new;
 		synthDefNames = List[];
+		this.keyBlockSize.addDependant({
+			// re-calculate distribution if keyBlockSize changes
+			// in contrary, a distribution change should never change keyBlockSize
+			this.distribution_(distribution)
+		});
 		if (MIDIClient.initialized.not) {
 			MIDIClient.init;
 			// doesn't seem to work properly on Ubuntustudio 16
@@ -72,6 +78,11 @@ CVCenterKeyboard {
 			recorder = CVCenterKeyboardRecorder(this);
 		};
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
+	}
+
+	distribution_ { |ratios|
+		distribution = (ratios.normalizeSum * this.keyBlockSize).round;
+		distribution = this.keyBlockSize - distribution[1..].sum ++ distribution[1..];
 	}
 
 	addSynthDef { |synthDefName|
@@ -219,12 +230,14 @@ CVCenterKeyboard {
 	}
 
 	// private
-	prEnvInit { |synthDefName|
-		CVCenter.scv[keyboardDefName] ?? { CVCenter.scv.put(keyboardDefName, ()) };
-		if (CVCenter.scv[keyboardDefName][synthDefName].isNil) {
-			CVCenter.scv[keyboardDefName].put(synthDefName, Array.newClear(128));
-		} {
-			"Synth '%' already set for CVCenterKeyboard '%'".format(synthDefName, keyboardDefName).warn;
+	prEnvInit { |sSynthDefNames|
+		sSynthDefNames.do { |name|
+			CVCenter.scv[keyboardDefName] ?? { CVCenter.scv.put(keyboardDefName, ()) };
+			if (CVCenter.scv[keyboardDefName][name].isNil) {
+				CVCenter.scv[keyboardDefName].put(name, Array.newClear(128));
+			} {
+				"Synth '%' already set for CVCenterKeyboard '%'".format(name, keyboardDefName).warn;
+			}
 		}
 	}
 
@@ -264,11 +277,10 @@ CVCenterKeyboard {
 		};
 	}
 
-	setSynthDef { |synthDefName|
-		// this.freeHangingNodes; // just in case...
+	setSynthDef { |...synthDefName|
+		synthDefName = synthDefName.collect(_.asSymbol);
 		this.clear;
 		group.free;
-		synthDefName = synthDefName.asSymbol;
 		currentSynthDef = synthDefName;
 		this.prEnvInit(synthDefName);
 		this.prInitKeyboard(synthDefName);
@@ -318,64 +330,83 @@ CVCenterKeyboard {
 	}
 
 	// private
-	prInitKeyboard { |synthDefName|
+	prInitKeyboard { |sSynthDefNames|
 		group = ParGroup.new;
 
-		onFuncs.put(synthDefName, { |veloc, num, chan, src|
-			var argsValues, wdgtsExcluded;
-			var kbArgs = [
-				synthParams[synthDefName].pitchControl,
-				num.midicps,
-				synthParams[synthDefName].velocControl,
-				veloc * 0.005,
-				synthParams[synthDefName].outControl,
-				// FIXME: this should probably be this.out, shouldn't it?
-				// synthParams[synthDefName].out
-				this.out;
-			];
+		// TODO: should distribution of synths if more than one
+		// synthDefName exists be handled within on-/off-/bendFuncs
+		// this could have the advantage of easily settable instance
+		// vars that can be changed at any time and changes would
+		// immediately get picked up
+		sSynthDefNames.do { |name, i|
+			onFuncs.put(name, { |veloc, num, chan, src|
+				var argsValues, wdgtsExcluded;
+				var synthDefIndex;
+				var kbArgs = [
+					synthParams[name].pitchControl,
+					num.midicps,
+					synthParams[name].velocControl,
+					veloc * 0.005,
+					synthParams[name].outControl,
+					// FIXME: this should probably be this.out, shouldn't it?
+					// synthParams[name].out
+					this.out;
+				];
 
-			// sort out keyboard-controlled args, they should only get set once.
-			// this may happen if an existing CVCenter setup gets loaded after 'setUpControls'
+				// sort out keyboard-controlled args, they should only get set once.
+				// this may happen if an existing CVCenter setup gets loaded after 'setUpControls'
 
-			// look up mappedBusses for Ndef to be placed instead of value
-			// to be tested...
-			wdgtsExcluded = namesCVs[synthDefName].select { |it, i| i % 3 > 0 };
-			pairs = wdgtsExcluded.clump(2).select {
-				|pair| kbArgs.includes(pair[0]).not
-			}.collect { |pair|
-				if (mappedBusses[pair[0]].notNil) {
-					[pair[0], mappedBusses[pair[0]]]
-				} {
-					[pair[0], pair[1]]
-				}
-			}.flatten(1);
-			valuePairs = pairs.deepCollect(2, _.value);
-			argsValues = kbArgs ++ valuePairs;
-			// "%: argsValues: %".format(argsValues).postln;
-			if (this.debug) {
-				"\non['%']\n\tsynthDefName: '%' \n\tnum: % \n\tchan: % \n\tsrc: % \n\targsValues: %".format(
-					keyboardDefName, synthDefName, num, chan, src, argsValues
-				).postln
-			};
-			CVCenter.scv[keyboardDefName][synthDefName][num] = Synth(synthDefName, argsValues, group);
-		});
+				// look up mappedBusses for Ndef to be placed instead of value
+				// to be tested...
+				wdgtsExcluded = namesCVs[name].select { |it, i| i % 3 > 0 };
+				pairs = wdgtsExcluded.clump(2).select {
+					|pair| kbArgs.includes(pair[0]).not
+				}.collect { |pair|
+					if (mappedBusses[pair[0]].notNil) {
+						[pair[0], mappedBusses[pair[0]]]
+					} {
+						[pair[0], pair[1]]
+					}
+				}.flatten(1);
+				valuePairs = pairs.deepCollect(2, _.value);
+				argsValues = kbArgs ++ valuePairs;
+				// "%: argsValues: %".format(argsValues).postln;
+				if (this.debug) {
+					"\non['%']\n\tsynthDefName: '%' \n\tnum: % \n\tchan: % \n\tsrc: % \n\targsValues: %".format(
+						keyboardDefName, name, num, chan, src, argsValues
+					).postln
+				};
+				// do distribution-based SynthDef selection here
+				// expect distribution always to be the same size as currentSynthDef?
+				synthDefIndex = num % this.keyBlockSize;
+				// we're only interested in the SynthDef at index i within the SynthDef's names that have been passed in
+				// TODO: do this smarter. determine range only once
+				distribution[i].do { |n|
+					if (i > 0) {
+						// add size of previous distribution block to n to get value to check against synthDefIndex
+						n = n + distribution[..n-1].sum;
+					}
+				};
+				CVCenter.scv[keyboardDefName][name][num] = Synth(name, argsValues, group);
+			});
 
-		offFuncs.put(synthDefName, { |veloc, num, chan, src|
-			if (this.debug) {
-				"\noff['%']\n\tsynthDefName: '%' \n\tnum: %,\n\tchan: %, \n\tsrc: %".format(keyboardDefName, synthDefName, num, chan, src).postln
-			};
-			CVCenter.scv[keyboardDefName][synthDefName][num].release;
-			CVCenter.scv[keyboardDefName][synthDefName][num] = nil;
-		});
+			offFuncs.put(name, { |veloc, num, chan, src|
+				if (this.debug) {
+					"\noff['%']\n\tsynthDefName: '%' \n\tnum: %,\n\tchan: %, \n\tsrc: %".format(keyboardDefName, name, num, chan, src).postln
+				};
+				CVCenter.scv[keyboardDefName][name][num].release;
+				CVCenter.scv[keyboardDefName][name][num] = nil;
+			});
 
-		bendFuncs.put(synthDefName, { |bendVal, chan, src|
-			if (this.debug) {
-				"\nbend['%']['%']: %\n\tbendVal: %\n\tchan: % \n\tsrc: %".postf(keyboardDefName, synthDefName, bendVal, chan, src).postln
-			};
-			CVCenter.scv[keyboardDefName][synthDefName].do({ |synth, i|
-				synth.set(synthParams[synthDefName].bendControl, (i + bendSpec.map(bendVal / 16383)).midicps)
-			})
-		});
+			bendFuncs.put(name, { |bendVal, chan, src|
+				if (this.debug) {
+					"\nbend['%']['%']: %\n\tbendVal: %\n\tchan: % \n\tsrc: %".postf(keyboardDefName, name, bendVal, chan, src).postln
+				};
+				CVCenter.scv[keyboardDefName][name].do({ |synth, i|
+					synth.set(synthParams[name].bendControl, (i + bendSpec.map(bendVal / 16383)).midicps)
+				})
+			});
+		}
 	}
 
 	addOutProxy { |numChannels=2, useNdef=false, transbus, outbus|
@@ -405,17 +436,21 @@ CVCenterKeyboard {
 		outProxy = nil;
 	}
 
-	clear { |synthDefName|
+	clear { |...synthDefName|
 		if (synthDefName.notNil) {
-			synthDefName = synthDefName.asSymbol;
+			synthDefName = synthDefName.collect(_.asSymbol);
 		} {
 			synthDefName = currentSynthDef;
 		};
-		onFuncs[synthDefName] !? { on.remove(onFuncs[synthDefName]) };
-		offFuncs[synthDefName] !? { off.remove(offFuncs[synthDefName]) };
-		bendFuncs[synthDefName] !? { bend.remove(bendFuncs[synthDefName]) };
-		CVCenter.scv[keyboardDefName][synthDefName].do(_.release);
-		CVCenter.scv[keyboardDefName].removeAt(synthDefName);
+
+		synthDefName.do { |name|
+			onFuncs[name] !? { on.remove(onFuncs[name]) };
+			offFuncs[name] !? { off.remove(offFuncs[name]) };
+			bendFuncs[name] !? { bend.remove(bendFuncs[name]) };
+			CVCenter.scv[keyboardDefName][name].do(_.release);
+			CVCenter.scv[keyboardDefName].removeAt(name);
+		};
+
 		CVCenter.scv.removeAt(keyboardDefName);
 	}
 
