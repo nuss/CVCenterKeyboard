@@ -3,7 +3,7 @@ CVCenterKeyboard {
 	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName, <touchOSC;
 	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, wdgtNames, <outProxy;
-	var <distribution, <>keyBlockSize=24;
+	var <distribution, <>keyBlockSize=24, noteMatches;
 	var <recorder, sampling = false, sampleEvents;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFuncs, <offFuncs, <bendFuncs; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
@@ -81,8 +81,42 @@ CVCenterKeyboard {
 	}
 
 	distribution_ { |ratios|
-		distribution = (ratios.normalizeSum * this.keyBlockSize).round;
-		distribution = this.keyBlockSize - distribution[1..].sum ++ distribution[1..];
+		var n, t, p1, matches;
+
+		if (ratios.isNil) {
+			n = currentSynthDef.size;
+			if (n <= 1) {
+				distribution = nil;
+			} {
+				t = (this.keyBlockSize / n).round;
+				if (t * n == this.keyBlockSize) {
+					distribution = t ! n;
+				} {
+					p1 = t ! (n-1);
+					distribution = p1 ++ (this.keyBlockSize - p1.sum);
+				}
+			}
+		} {
+			if (ratios.sum != this.keyBlockSize) {
+				distribution = (ratios.normalizeSum * this.keyBlockSize).round;
+				distribution = this.keyBlockSize - distribution[1..].sum ++ distribution[1..];
+			} {
+				distribution = ratios;
+			}
+		};
+		// we're only interested in the SynthDef at index i within the SynthDef's names that have been passed in
+		// TODO: do this smarter. determine range only once
+		distribution !? {
+			noteMatches = List[];
+			distribution.do { |n, i|
+				matches = { |num| num } ! n;
+				if (i > 0) {
+					// add size of previous distribution block to n to get value to check against synthDefIndex
+					matches = matches + distribution[..n-1].sum;
+				};
+				noteMatches.add(matches)
+			}
+		}
 	}
 
 	addSynthDef { |synthDefName|
@@ -282,6 +316,8 @@ CVCenterKeyboard {
 		this.clear;
 		group.free;
 		currentSynthDef = synthDefName;
+		// trigger this.distribution_
+		this.keyBlockSize_(this.keyBlockSize).changed(\value);
 		this.prEnvInit(synthDefName);
 		this.prInitKeyboard(synthDefName);
 		this.on.add(onFuncs[synthDefName]);
@@ -334,7 +370,8 @@ CVCenterKeyboard {
 		group = ParGroup.new;
 
 		// TODO: should distribution of synths if more than one
-		// synthDefName exists be handled within on-/off-/bendFuncs
+		// synthDefName exists distribution of synths should
+		// be handled within on-/off-/bendFuncs
 		// this could have the advantage of easily settable instance
 		// vars that can be changed at any time and changes would
 		// immediately get picked up
@@ -379,14 +416,7 @@ CVCenterKeyboard {
 				// do distribution-based SynthDef selection here
 				// expect distribution always to be the same size as currentSynthDef?
 				synthDefIndex = num % this.keyBlockSize;
-				// we're only interested in the SynthDef at index i within the SynthDef's names that have been passed in
-				// TODO: do this smarter. determine range only once
-				distribution[i].do { |n|
-					if (i > 0) {
-						// add size of previous distribution block to n to get value to check against synthDefIndex
-						n = n + distribution[..n-1].sum;
-					}
-				};
+				// TODO
 				CVCenter.scv[keyboardDefName][name][num] = Synth(name, argsValues, group);
 			});
 
