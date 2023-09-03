@@ -3,7 +3,7 @@ CVCenterKeyboard {
 	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName, <touchOSC;
 	var <>bendSpec, <>out, <server, <group;
 	var <currentSynthDef, wdgtNames, <outProxy;
-	var <distribution, <>keyBlockSize=24, noteMatches;
+	var <distribution, prKeyBlockSize, noteMatches;
 	var <recorder, sampling = false, sampleEvents;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFuncs, <offFuncs, <bendFuncs; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
@@ -47,11 +47,13 @@ CVCenterKeyboard {
 		all.put(keyboardDefName, this);
 		group = ParGroup.new;
 		synthDefNames = List[];
-		this.keyBlockSize.addDependant({
+		prKeyBlockSize = Ref(24);
+		prKeyBlockSize.addDependant({
 			// re-calculate distribution if keyBlockSize changes
 			// in contrary, a distribution change should never change keyBlockSize
 			this.distribution_(distribution)
 		});
+		"dependantsDictionary[%]: %".format(this.keyBlockSize, dependantsDictionary[this.keyBlockSize]).postln;
 		if (MIDIClient.initialized.not) {
 			MIDIClient.init;
 			// doesn't seem to work properly on Ubuntustudio 16
@@ -81,29 +83,29 @@ CVCenterKeyboard {
 	}
 
 	distribution_ { |ratios|
-		var n, t, p1, matches;
+		var n = currentSynthDef.size, t, p1, matches;
+
+		if (n <= 1) {
+			distribution = nil;
+		};
 
 		if (ratios.isNil) {
-			n = currentSynthDef.size;
-			if (n <= 1) {
-				distribution = nil;
+			t = (this.keyBlockSize / n).round;
+			if (t * n == this.keyBlockSize) {
+				distribution = t ! n;
 			} {
-				t = (this.keyBlockSize / n).round;
-				if (t * n == this.keyBlockSize) {
-					distribution = t ! n;
-				} {
-					p1 = t ! (n-1);
-					distribution = p1 ++ (this.keyBlockSize - p1.sum);
-				}
+				p1 = t ! (n-1);
+				distribution = p1 ++ (this.keyBlockSize - p1.sum);
 			}
 		} {
 			if (ratios.sum != this.keyBlockSize) {
 				distribution = (ratios.normalizeSum * this.keyBlockSize).round;
-				distribution = this.keyBlockSize - distribution[1..].sum ++ distribution[1..];
+				distribution = [this.keyBlockSize - distribution[1..].sum] ++ distribution[1..];
 			} {
 				distribution = ratios;
 			}
 		};
+
 		// we're only interested in the SynthDef at index i within the SynthDef's names that have been passed in
 		// TODO: do this smarter. determine range only once
 		distribution !? {
@@ -112,11 +114,19 @@ CVCenterKeyboard {
 				matches = { |num| num } ! n;
 				if (i > 0) {
 					// add size of previous distribution block to n to get value to check against synthDefIndex
-					matches = matches + distribution[..n-1].sum;
+					matches = matches + distribution[..(i-1)].sum;
 				};
 				noteMatches.add(matches)
 			}
 		}
+	}
+
+	keyBlockSize_ { |size|
+		prKeyBlockSize.value_(size).changed(\value);
+	}
+
+	keyBlockSize {
+		^prKeyBlockSize.value
 	}
 
 	addSynthDef { |synthDefName|
@@ -317,12 +327,14 @@ CVCenterKeyboard {
 		group.free;
 		currentSynthDef = synthDefName;
 		// trigger this.distribution_
-		this.keyBlockSize_(this.keyBlockSize).changed(\value);
+		prKeyBlockSize.changed;
 		this.prEnvInit(synthDefName);
 		this.prInitKeyboard(synthDefName);
-		this.on.add(onFuncs[synthDefName]);
-		this.off.add(offFuncs[synthDefName]);
-		this.bend.add(bendFuncs[synthDefName]);
+		synthDefName.do { |name|
+			this.on.add(onFuncs[name]);
+			this.off.add(offFuncs[name]);
+			this.bend.add(bendFuncs[name]);
+		}
 	}
 
 	record { |onOff|
@@ -378,7 +390,7 @@ CVCenterKeyboard {
 		sSynthDefNames.do { |name, i|
 			onFuncs.put(name, { |veloc, num, chan, src|
 				var argsValues, wdgtsExcluded;
-				var synthDefIndex;
+				var noteIndex;
 				var kbArgs = [
 					synthParams[name].pitchControl,
 					num.midicps,
@@ -408,16 +420,18 @@ CVCenterKeyboard {
 				valuePairs = pairs.deepCollect(2, _.value);
 				argsValues = kbArgs ++ valuePairs;
 				// "%: argsValues: %".format(argsValues).postln;
-				if (this.debug) {
-					"\non['%']\n\tsynthDefName: '%' \n\tnum: % \n\tchan: % \n\tsrc: % \n\targsValues: %".format(
-						keyboardDefName, name, num, chan, src, argsValues
-					).postln
-				};
 				// do distribution-based SynthDef selection here
 				// expect distribution always to be the same size as currentSynthDef?
-				synthDefIndex = num % this.keyBlockSize;
-				// TODO
-				CVCenter.scv[keyboardDefName][name][num] = Synth(name, argsValues, group);
+				noteIndex = num % this.keyBlockSize;
+				// check...
+				if (noteMatches.isNil or: { noteMatches[i].includesEqual(noteIndex) }) {
+					CVCenter.scv[keyboardDefName][name][num] = Synth(name, argsValues, group);
+					if (this.debug) {
+						"\non['%']\n\tsynthDefName: '%' \n\tnum: % \n\tchan: % \n\tsrc: % \n\targsValues: %".format(
+							keyboardDefName, name, num, chan, src, argsValues
+						).postln
+					}
+				}
 			});
 
 			offFuncs.put(name, { |veloc, num, chan, src|
