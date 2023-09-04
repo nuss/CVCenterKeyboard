@@ -53,7 +53,7 @@ CVCenterKeyboard {
 			// in contrary, a distribution change should never change keyBlockSize
 			this.distribution_(distribution)
 		});
-		"dependantsDictionary[%]: %".format(this.keyBlockSize, dependantsDictionary[this.keyBlockSize]).postln;
+		"dependantsDictionary[%]: %".format(prKeyBlockSize, dependantsDictionary[prKeyBlockSize]).postln;
 		if (MIDIClient.initialized.not) {
 			MIDIClient.init;
 			// doesn't seem to work properly on Ubuntustudio 16
@@ -83,24 +83,26 @@ CVCenterKeyboard {
 	}
 
 	distribution_ { |ratios|
-		var n = currentSynthDef.size, t, p1, matches;
+		var n = currentSynthDef.size;
+		var kbs = this.keyBlockSize;
+		var t, p1, matches;
 
 		if (n <= 1) {
 			distribution = nil;
 		};
 
 		if (ratios.isNil) {
-			t = (this.keyBlockSize / n).round;
-			if (t * n == this.keyBlockSize) {
+			t = (kbs / n).round;
+			if (t * n == kbs) {
 				distribution = t ! n;
 			} {
 				p1 = t ! (n-1);
-				distribution = p1 ++ (this.keyBlockSize - p1.sum);
+				distribution = p1 ++ (kbs - p1.sum);
 			}
 		} {
-			if (ratios.sum != this.keyBlockSize) {
-				distribution = (ratios.normalizeSum * this.keyBlockSize).round;
-				distribution = [this.keyBlockSize - distribution[1..].sum] ++ distribution[1..];
+			if (ratios.sum != kbs) {
+				distribution = (ratios.normalizeSum * kbs).round;
+				distribution = [kbs - distribution[1..].sum] ++ distribution[1..];
 			} {
 				distribution = ratios;
 			}
@@ -114,7 +116,7 @@ CVCenterKeyboard {
 				matches = { |num| num } ! n;
 				if (i > 0) {
 					// add size of previous distribution block to n to get value to check against synthDefIndex
-					matches = matches + distribution[..(i-1)].sum;
+					matches = matches + distribution[..i-1].sum;
 				};
 				noteMatches.add(matches)
 			}
@@ -122,7 +124,7 @@ CVCenterKeyboard {
 	}
 
 	keyBlockSize_ { |size|
-		prKeyBlockSize.value_(size).changed(\value);
+		prKeyBlockSize.value_(size).changed;
 	}
 
 	keyBlockSize {
@@ -280,7 +282,7 @@ CVCenterKeyboard {
 			if (CVCenter.scv[keyboardDefName][name].isNil) {
 				CVCenter.scv[keyboardDefName].put(name, Array.newClear(128));
 			} {
-				"Synth '%' already set for CVCenterKeyboard '%'".format(name, keyboardDefName).warn;
+				"Array for Synth instances of SynthDef '%' already set for CVCenterKeyboard '%'".format(name, keyboardDefName).warn;
 			}
 		}
 	}
