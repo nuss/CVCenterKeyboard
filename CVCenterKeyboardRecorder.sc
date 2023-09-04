@@ -42,43 +42,50 @@ CVCenterKeyboardRecorder {
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues;
 			var offTime;
+			var synthDefSize = keyboard.currentSynthDef.size;
 
 			keyboard.currentSynthDef ?? {
 				"[CVCenterKeyboardRecorder] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
 			};
+
 			if (keyboard.synthParams.isNil) {
 				"[CVCenterKeyboardRecorder] No SynthDef initialized for keyboard yet. Call \"setUpControls\" on your CVCenterKeyboard instance first.".warn;
 			} {
-				kbArgs = [
-					keyboard.synthParams[keyboard.currentSynthDef].pitchControl,
-					num.midicps,
-					keyboard.synthParams[keyboard.currentSynthDef].velocControl,
-					veloc * 0.005,
-					keyboard.synthParams[keyboard.currentSynthDef].outControl,
-					// FIXME: this should probably be this.out, shouldn't it?
-					// synthParams[synthDefName].out
-					keyboard.out;
-				];
-				argsValues = kbArgs ++ keyboard.valuePairs;
-				if (isSampling) {
-					onTimes[num] = Main.elapsedTime;
-					argsValues.pairsDo { |k, v|
-						sampleEvents[num][k] ?? {
-							sampleEvents[num].put(k, [])
+				keyboard.currentSynthDef.do { |sd|
+					kbArgs = [
+						keyboard.synthParams[sd].pitchControl,
+						num.midicps,
+						keyboard.synthParams[sd].velocControl,
+						veloc * 0.005,
+						keyboard.synthParams[sd].outControl,
+						// FIXME: this should probably be this.out, shouldn't it?
+						// synthParams[synthDefName].out
+						keyboard.out;
+					];
+					// FIXME: Does argsValues need to be created individually for every SynthDef
+					// sampleEvents should expose the synth?
+					// Always need to have valuePairs for all Synths prepared?
+					argsValues = kbArgs ++ keyboard.valuePairs;
+					if (isSampling) {
+						onTimes[num] = Main.elapsedTime;
+						argsValues.pairsDo { |k, v|
+							sampleEvents[num][k] ?? {
+								sampleEvents[num].put(k, [])
+							};
+							if (v.size > 1) {
+								// multichannel-expand arrayed args properly
+								sampleEvents[num][k] = sampleEvents[num][k].add([v]);
+							} {
+								sampleEvents[num][k] = sampleEvents[num][k].add(v);
+							};
+							if (this.debug) { [k, v].postln };
 						};
-						if (v.size > 1) {
-							// multichannel-expand arrayed args properly
-							sampleEvents[num][k] = sampleEvents[num][k].add([v]);
-						} {
-							sampleEvents[num][k] = sampleEvents[num][k].add(v);
+						sampleEvents[num].dur ?? {
+							sampleEvents[num].put(\dur, []);
 						};
-						if (this.debug) { [k, v].postln };
-					};
-					sampleEvents[num].dur ?? {
-						sampleEvents[num].put(\dur, []);
-					};
-					sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(offTime = onTimes[num] - offTimes[num]));
-					if (this.debug) { "Off time: %".format(offTime).postln };
+						sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(offTime = onTimes[num] - offTimes[num]));
+						if (this.debug) { "Off time: %".format(offTime).postln };
+					}
 				}
 			}
 		};
