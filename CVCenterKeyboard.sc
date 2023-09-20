@@ -86,7 +86,6 @@ CVCenterKeyboard {
 		var n = currentSynthDef.size;
 		var kbs = this.keyBlockSize;
 		var t, p1, matches;
-		"distribution!!! %".format(n).postln;
 
 		if (n <= 1) {
 			#noteMatches, distribution = nil!2;
@@ -167,9 +166,7 @@ CVCenterKeyboard {
 		};
 
 		if (SynthDescLib.at(synthDefName).hasGate.not) {
-			Error(
-				"The given SynthDef does not provide a 'gate' argument and can not be used."
-			).throw;
+			"The given SynthDef does not provide a 'gate' argument. Keep in mind that Synths must release themselves or they will pile up until the CPU hangs.".warn
 		};
 
 		if (CVCenter.at(keyboardDefName).notNil and: {
@@ -192,17 +189,22 @@ CVCenterKeyboard {
 
 	// keyboardArg is the arg that will be set through playing the keyboard
 	// bendArg will be the arg that's set through the pitch bend wheel
-	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, includeInCVCenter=#[], theServer, outbus=0, deactivateDefaultWidgetActions = true, tab, setSynthDef=false|
+	setUpControls { |synthDefName, prefix, pitchControl=\freq, velocControl=\veloc, bendControl=\bend, outControl=\out, tuning, theServer, outbus=0, deactivateDefaultWidgetActions = true, tab, setSynthDef=false|
 		var testSynth, notesEnv, excemptArgs = [];
 		var args = [];
 
+		tuning !? {
+			if (tuning.class !== ControlSpec) {
+				Error("argument 'tuning' in 'setUpControls' must be a valid ControlSpec!").throw
+			}
+		};
 		pitchControl = pitchControl.asSymbol;
 		velocControl = velocControl.asSymbol;
 		bendControl = bendControl.asSymbol;
 		outControl = outControl.asSymbol;
-		includeInCVCenter !? {
-			includeInCVCenter = includeInCVCenter.collect { |name| name.asSymbol }
-		};
+		// includeInCVCenter !? {
+		// 	includeInCVCenter = includeInCVCenter.collect { |name| name.asSymbol }
+		// };
 
 		synthDefName = synthDefName.asSymbol;
 
@@ -229,27 +231,27 @@ CVCenterKeyboard {
 		};
 		outControl !? {
 			synthParams[synthDefName].outControl = outControl;
-			includeInCVCenter.includes(outControl).not.if {
-				excemptArgs = excemptArgs.add(outControl)
-			}
+			// includeInCVCenter.includes(outControl).not.if {
+			excemptArgs = excemptArgs.add(outControl)
+			// }
 		};
 		pitchControl !? {
 			synthParams[synthDefName].pitchControl = pitchControl;
-			includeInCVCenter.includes(pitchControl).not.if {
-				excemptArgs = excemptArgs.add(pitchControl)
-			}
+			// includeInCVCenter.includes(pitchControl).not.if {
+			excemptArgs = excemptArgs.add(pitchControl)
+			// }
 		};
 		velocControl !? {
 			synthParams[synthDefName].velocControl = velocControl;
-			includeInCVCenter.includes(velocControl).not.if {
-				excemptArgs = excemptArgs.add(velocControl)
-			}
+			// includeInCVCenter.includes(velocControl).not.if {
+			excemptArgs = excemptArgs.add(velocControl)
+			// }
 		};
 		bendControl !? {
 			synthParams[synthDefName].bendControl = bendControl;
-			includeInCVCenter.includes(bendControl).not.if {
-				excemptArgs = excemptArgs.add(bendControl)
-			}
+			// includeInCVCenter.includes(bendControl).not.if {
+			excemptArgs = excemptArgs.add(bendControl)
+			// }
 		};
 		outbus !? { this.out_(outbus) };
 
@@ -260,13 +262,16 @@ CVCenterKeyboard {
 		server.waitForBoot {
 			// SynthDef *should* have an \amp arg, otherwise it will sound for moment
 			testSynth = Synth(synthDefName);
+			tuning !? {
+				CVCenter.use((synthParams[synthDefName].prefix ++ "Tuning").asSymbol, tuning, tab: tab)
+			};
 			// \gate will be set internally
 			testSynth.cvcGui(
 				prefix: synthParams[synthDefName].prefix,
 				excemptArgs: excemptArgs,
 				tab: tab,
 				completionFunc: {
-					this.prAddWidgetActionsForKeyboard(synthDefName, deactivateDefaultWidgetActions);
+					this.prAddWidgetActionsForKeyboard(synthDefName, deactivateDefaultWidgetActions, tuning);
 				}
 			);
 			testSynth.release;
@@ -288,9 +293,9 @@ CVCenterKeyboard {
 		}
 	}
 
-	prAddWidgetActionsForKeyboard { |synthDefName, deactivateDefaultActions|
+	prAddWidgetActionsForKeyboard { |synthDefName, deactivateDefaultActions, tuning|
 		var args = SynthDescLib.at(synthDefName).controlDict.keys.asArray;
-		var wdgtName, argName, cv, nameString;
+		var wdgtName, argName, cv, nameString, tuningAmendment;
 
 		this.prInitCVs(synthDefName, args);
 
@@ -299,14 +304,18 @@ CVCenterKeyboard {
 			argName = namesCVs[synthDefName][i + 1];
 			cv = namesCVs[synthDefName][i + 2];
 
+			if (argName === synthParams[synthDefName].pitchControl and: { tuning.notNil }) {
+				tuningAmendment = "+ CVCenter.at('%').value".format(synthParams[synthDefName].prefix ++ "Tuning")
+			} { tuningAmendment = "" };
+
 			CVCenter.cvWidgets[wdgtName] !? {
 				if (CVCenter.cvWidgets[wdgtName].class == CVWidget2D) {
 					#[lo, hi].do { |slot|
 						var setString;
 						if (slot === \lo) {
-							setString = "[cv.value, CVCenter.at('%').hi.value]".format(wdgtName);
+							setString = "[cv.value %, CVCenter.at('%').hi.value %]".format(tuningAmendment, wdgtName, tuningAmendment);
 						} {
-							setString = "[CVCenter.at('%').lo.value, cv.value]".format(wdgtName);
+							setString = "[CVCenter.at('%').lo.value %, cv.value %]".format(tuningAmendment, wdgtName, tuningAmendment);
 						};
 						CVCenter.addActionAt(
 							wdgtName, 'keyboard set arg',
@@ -316,8 +325,8 @@ CVCenterKeyboard {
 					}
 				} {
 					CVCenter.addActionAt(wdgtName, 'keyboard set arg',
-						"{ |cv| CVCenterKeyboard.all['%'].group.set('%', cv.value) }"
-						.format(keyboardDefName, argName));
+						"{ |cv| CVCenterKeyboard.all['%'].group.set('%', cv.value %) }"
+						.format(keyboardDefName, argName, tuningAmendment));
 					CVCenter.activateActionAt(wdgtName, \default, deactivateDefaultActions.not);
 				}
 			}
@@ -384,25 +393,17 @@ CVCenterKeyboard {
 	prInitKeyboard { |sSynthDefNames|
 		group = ParGroup.new;
 		#pairs, valuePairs = ()!2;
-		// TODO: should distribution of synths if more than one
-		// synthDefName exists distribution of synths should
-		// be handled within on-/off-/bendFuncs
-		// this could have the advantage of easily settable instance
-		// vars that can be changed at any time and changes would
-		// immediately get picked up
 		sSynthDefNames.do { |name, i|
-			"sSynthDefNames[%]: %".format(i, name).postln;
 			onFuncs.put(name, { |veloc, num, chan, src|
 				var argsValues, wdgtsExcluded;
 				var noteIndex;
 				var kbArgs = [
 					synthParams[name].pitchControl,
+					// FIXME: set tuning HERE!!
 					num.midicps,
 					synthParams[name].velocControl,
 					veloc * 0.005,
 					synthParams[name].outControl,
-					// FIXME: this should probably be this.out, shouldn't it?
-					// synthParams[name].out
 					this.out;
 				];
 
@@ -428,7 +429,7 @@ CVCenterKeyboard {
 				// expect distribution always to be the same size as currentSynthDef?
 				noteIndex = num % this.keyBlockSize;
 				// check...
-				"noteMatches: %".format(noteMatches).postln;
+				// "noteMatches: %".format(noteMatches).postln;
 				if (noteMatches.isNil or: { noteMatches[i].includesEqual(noteIndex) }) {
 					CVCenter.scv[keyboardDefName][name][num] = Synth(name, argsValues, group);
 					if (this.debug) {
