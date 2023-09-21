@@ -1,7 +1,7 @@
 CVCenterKeyboard {
 	classvar <all;
 	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName, <touchOSC;
-	var <>bendSpec, <>out, <server, <group;
+	var <>bendSpec, <>out, <server, <group, tunings;
 	var <currentSynthDef, wdgtNames, <outProxy;
 	var <distribution, prKeyBlockSize, noteMatches;
 	var <recorder, sampling = false, sampleEvents;
@@ -46,6 +46,7 @@ CVCenterKeyboard {
 		};
 		all.put(keyboardDefName, this);
 		group = ParGroup.new;
+		tunings = ();
 		synthDefNames = List[];
 		prKeyBlockSize = Ref(24);
 		prKeyBlockSize.addDependant({
@@ -193,11 +194,6 @@ CVCenterKeyboard {
 		var testSynth, notesEnv, excemptArgs = [];
 		var args = [];
 
-		tuning !? {
-			if (tuning.class !== ControlSpec) {
-				Error("argument 'tuning' in 'setUpControls' must be a valid ControlSpec!").throw
-			}
-		};
 		pitchControl = pitchControl.asSymbol;
 		velocControl = velocControl.asSymbol;
 		bendControl = bendControl.asSymbol;
@@ -207,6 +203,13 @@ CVCenterKeyboard {
 		// };
 
 		synthDefName = synthDefName.asSymbol;
+		tuning !? {
+			if (tuning.class !== ControlSpec) {
+				Error("argument 'tuning' in 'setUpControls' must be a valid ControlSpec!").throw
+			} {
+				tunings.put(synthDefName, tuning)
+			}
+		};
 
 		SynthDescLib.at(synthDefName) ?? {
 			Error("No SynthDef '%' found in the SynthDescLib".format(synthDefName)).throw;
@@ -259,12 +262,13 @@ CVCenterKeyboard {
 
 		tab ?? { tab = synthDefName };
 
+		tuning !? {
+			CVCenter.use((synthParams[synthDefName].prefix ++ "Tuning").asSymbol, tuning, tab: tab)
+		};
+
 		server.waitForBoot {
 			// SynthDef *should* have an \amp arg, otherwise it will sound for moment
 			testSynth = Synth(synthDefName);
-			tuning !? {
-				CVCenter.use((synthParams[synthDefName].prefix ++ "Tuning").asSymbol, tuning, tab: tab)
-			};
 			// \gate will be set internally
 			testSynth.cvcGui(
 				prefix: synthParams[synthDefName].prefix,
@@ -397,10 +401,14 @@ CVCenterKeyboard {
 			onFuncs.put(name, { |veloc, num, chan, src|
 				var argsValues, wdgtsExcluded;
 				var noteIndex;
+				var freq = if (tunings[name].notNil) {
+					num.midicps + CVCenter.at((synthParams[name].prefix ++ "Tuning").asSymbol).value
+				} {
+					num.midicps
+				};
 				var kbArgs = [
 					synthParams[name].pitchControl,
-					// FIXME: set tuning HERE!!
-					num.midicps,
+					freq,
 					synthParams[name].velocControl,
 					veloc * 0.005,
 					synthParams[name].outControl,
