@@ -69,21 +69,21 @@ CVCenterKeyboardRecorder {
 					if (isSampling) {
 						onTimes[num] = Main.elapsedTime;
 						argsValues.pairsDo { |k, v|
-							sampleEvents[num][k] ?? {
-								sampleEvents[num].put(k, [])
+							sampleEvents[sd][num][k] ?? {
+								sampleEvents[sd][num].put(k, [])
 							};
 							if (v.size > 1) {
 								// multichannel-expand arrayed args properly
-								sampleEvents[num][k] = sampleEvents[num][k].add([v]);
+								sampleEvents[sd][num][k] = sampleEvents[sd][num][k].add([v]);
 							} {
-								sampleEvents[num][k] = sampleEvents[num][k].add(v);
+								sampleEvents[sd][num][k] = sampleEvents[sd][num][k].add(v);
 							};
 							if (this.debug) { [k, v].postln };
 						};
-						sampleEvents[num].dur ?? {
-							sampleEvents[num].put(\dur, []);
+						sampleEvents[sd][num].dur ?? {
+							sampleEvents[sd][num].put(\dur, []);
 						};
-						sampleEvents[num].dur = sampleEvents[num].dur.add(Rest(offTime = onTimes[num] - offTimes[num]));
+						sampleEvents[sd][num].dur = sampleEvents[sd][num].dur.add(Rest(offTime = onTimes[num] - offTimes[num]));
 						if (this.debug) { "Off time: %".format(offTime).postln };
 					}
 				}
@@ -92,14 +92,17 @@ CVCenterKeyboardRecorder {
 		sampleOffFunc = { |veloc, num, chan, src|
 			var onTime;
 			keyboard.currentSynthDef ?? {
-				"[]CVCenterKeyboardRecorder] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
+				"[CVCenterKeyboardRecorder] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
 			};
+
 			if (isSampling) {
 				offTimes[num] = Main.elapsedTime;
-				sampleEvents[num].dur ?? {
-					sampleEvents[num].put(\dur, []);
+				keyboard.currentSynthDef.do { |sd|
+					sampleEvents[sd][num].dur ?? {
+						sampleEvents[sd][num].put(\dur, []);
+					};
+					sampleEvents[sd][num].dur = sampleEvents[sd][num].dur.add(onTime = offTimes[num] - onTimes[num]);
 				};
-				sampleEvents[num].dur = sampleEvents[num].dur.add(onTime = offTimes[num] - onTimes[num]);
 				if (this.debug) { "On time: %".format(onTime).postln };
 			}
 		};
@@ -107,7 +110,6 @@ CVCenterKeyboardRecorder {
 		keyboard.off.add(sampleOffFunc);
 	}
 
-	// maybe it would be more convenient to have only one method 'record' with a parameter onOff
 	record { |onOff|
 		var synthDefName, synthParams;
 		var pbproxy, pbinds, /*name,*/ /*group, */last, items/*, index*/;
@@ -122,6 +124,7 @@ CVCenterKeyboardRecorder {
 		{ isSampling == true or: { onOff == false }} {
 			isSampling = false;
 			sampleEnd = Main.elapsedTime;
+			// FIXME: how do we get the right instrument in the sampled sequences?
 			synthDefName = keyboard.currentSynthDef;
 			synthParams = keyboard.synthParams;
 			pdef ?? { pdef = List[] };
@@ -200,7 +203,11 @@ CVCenterKeyboardRecorder {
 		// starttime, absolute
 		#onTimes, offTimes = Main.elapsedTime!128!2;
 		// the array holding all events for all 128 midi keys
-		sampleEvents = ()!128;
+		// for each of the SynthDefs denoted by currentSynthDef
+		sampleEvents = ();
+		keyboard.currentSynthDef.do { |name|
+			sampleEvents.put(name, ()!128);
+		}
 	}
 
 	clearSequences { |...keys|
