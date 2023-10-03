@@ -3,7 +3,7 @@ CVCenterKeyboard {
 	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName, <touchOSC;
 	var <>bendSpec, <>out, <server, <group, tunings;
 	var <currentSynthDef, wdgtNames, <outProxy;
-	var <distribution, prKeyBlockSize, noteMatches;
+	var <distribution, prKeyBlockSize, <noteMatches;
 	var <recorder, sampling = false, sampleEvents;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFuncs, <offFuncs, <bendFuncs; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
@@ -109,7 +109,6 @@ CVCenterKeyboard {
 			};
 
 			// we're only interested in the SynthDef at index i within the SynthDef's names that have been passed in
-			// TODO: do this smarter. determine range only once
 			distribution !? {
 				noteMatches = List[];
 				distribution.do { |n, i|
