@@ -6,6 +6,7 @@ CVCenterKeyboardRecorder {
 	var sampleOnFunc, sampleOffFunc, sampleEvents;
 	var <pdef, cSample = 1;
 	var <>debug = false;
+	var onc = 1, offc = 1;
 
 	*initClass {
 		all = ();
@@ -44,6 +45,9 @@ CVCenterKeyboardRecorder {
 			var offTime;
 			var synthDefSize = keyboard.currentSynthDef.size;
 
+			"\non count: %\n".format(onc).postln;
+			onc = onc + 1;
+
 			keyboard.currentSynthDef ?? {
 				"[CVCenterKeyboardRecorder] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
 			};
@@ -77,6 +81,7 @@ CVCenterKeyboardRecorder {
 								sampleEvents[sd][num][k] ?? {
 									sampleEvents[sd][num].put(k, [])
 								};
+								"sampleEvent['%'][%][%]: %\nkey: %\nvalue: %\n".format(sd, num, k, sampleEvents[sd][num][k], k, v).postln;
 								if (v.size > 1) {
 									// multichannel-expand arrayed args properly
 									sampleEvents[sd][num][k] = sampleEvents[sd][num][k].add([v]);
@@ -97,6 +102,10 @@ CVCenterKeyboardRecorder {
 		};
 		sampleOffFunc = { |veloc, num, chan, src|
 			var onTime, noteIndex;
+
+			"\noff count: %\n\n".postf(offc);
+			offc = offc + 1;
+
 			keyboard.currentSynthDef ?? {
 				"[CVCenterKeyboardRecorder] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
 			};
@@ -125,6 +134,8 @@ CVCenterKeyboardRecorder {
 		var synthDefNames, synthParams;
 		var pbproxy, pbinds, /*name,*/ /*group, */last, items/*, index*/;
 		var ampWdgtName, pauseWdgtName, removeWdgtName;
+
+		#onc, offc = 1!2;
 
 		synthDefNames = keyboard.currentSynthDef;
 
