@@ -51,46 +51,46 @@ CVCenterKeyboardRecorder {
 			if (keyboard.synthParams.isNil) {
 				"[CVCenterKeyboardRecorder] No SynthDef initialized for keyboard yet. Call \"setUpControls\" on your CVCenterKeyboard instance first.".warn;
 			} {
-				noteIndex = num % keyboard.keyBlockSize;
-				keyboard.currentSynthDef.do { |sd, i|
-					kbArgs = [
-						keyboard.synthParams[sd].pitchControl,
-						num.midicps,
-						keyboard.synthParams[sd].velocControl,
-						veloc * 0.005,
-						keyboard.synthParams[sd].outControl,
-						// FIXME: this should probably be this.out, shouldn't it?
-						// synthParams[synthDefName].out
-						keyboard.out;
-					];
-					// FIXME: Does argsValues need to be created individually for every SynthDef
-					// sampleEvents should expose the synth?
-					// Always need to have valuePairs for all Synths prepared?
-					argsValues = kbArgs ++ keyboard.valuePairs;
-
-					if (isSampling and: {
-						keyboard.noteMatches.isNil or: {
+				if (isSampling) {
+					onTimes[num] = Main.elapsedTime;
+					noteIndex = num % keyboard.keyBlockSize;
+					keyboard.currentSynthDef.do { |sd, i|
+						if (keyboard.noteMatches.isNil or: {
 							keyboard.noteMatches[i].includesEqual(noteIndex)
+						}) {
+							kbArgs = [
+								keyboard.synthParams[sd].pitchControl,
+								num.midicps,
+								keyboard.synthParams[sd].velocControl,
+								veloc * 0.005,
+								keyboard.synthParams[sd].outControl,
+								// FIXME: this should probably be this.out, shouldn't it?
+								// synthParams[synthDefName].out
+								keyboard.out;
+							];
+							// FIXME: Does argsValues need to be created individually for every SynthDef
+							// sampleEvents should expose the synth?
+							// Always need to have valuePairs for all Synths prepared?
+							argsValues = kbArgs ++ keyboard.valuePairs;
+
+							argsValues.pairsDo { |k, v|
+								sampleEvents[sd][num][k] ?? {
+									sampleEvents[sd][num].put(k, [])
+								};
+								if (v.size > 1) {
+									// multichannel-expand arrayed args properly
+									sampleEvents[sd][num][k] = sampleEvents[sd][num][k].add([v]);
+								} {
+									sampleEvents[sd][num][k] = sampleEvents[sd][num][k].add(v);
+								};
+								if (this.debug) { "%: %".format(sd, [k, v]).postln };
+							};
+							sampleEvents[sd][num].dur ?? {
+								sampleEvents[sd][num].put(\dur, []);
+							};
+							sampleEvents[sd][num].dur = sampleEvents[sd][num].dur.add(Rest(offTime = onTimes[num] - offTimes[num]));
+							if (this.debug) { "[%] Off time: %".format(sd, offTime).postln };
 						}
-					}) {
-						onTimes[num] = Main.elapsedTime;
-						argsValues.pairsDo { |k, v|
-							sampleEvents[sd][num][k] ?? {
-								sampleEvents[sd][num].put(k, [])
-							};
-							if (v.size > 1) {
-								// multichannel-expand arrayed args properly
-								sampleEvents[sd][num][k] = sampleEvents[sd][num][k].add([v]);
-							} {
-								sampleEvents[sd][num][k] = sampleEvents[sd][num][k].add(v);
-							};
-							if (this.debug) { "%: %".format(sd, [k, v]).postln };
-						};
-						sampleEvents[sd][num].dur ?? {
-							sampleEvents[sd][num].put(\dur, []);
-						};
-						sampleEvents[sd][num].dur = sampleEvents[sd][num].dur.add(Rest(offTime = onTimes[num] - offTimes[num]));
-						if (this.debug) { "[%] Off time: %".format(sd, offTime).postln };
 					}
 				}
 			}
@@ -101,22 +101,19 @@ CVCenterKeyboardRecorder {
 				"[CVCenterKeyboardRecorder] No SynthDef selected for keyboard '%'. Call setSynthDef(synthDefName) on the CVCenterKeyboard instance before playing the keyboard!".format(keyboard.keyboardDefName).error;
 			};
 
-			noteIndex = num % keyboard.keyBlockSize;
-
-			keyboard.currentSynthDef.do { |sd, i|
-				if (isSampling  and: {
-					keyboard.noteMatches.isNil or: {
+			if (isSampling) {
+				noteIndex = num % keyboard.keyBlockSize;
+				offTimes[num] = Main.elapsedTime;
+				keyboard.currentSynthDef.do { |sd, i|
+					if (keyboard.noteMatches.isNil or: {
 						keyboard.noteMatches[i].includesEqual(noteIndex)
-					}
-				}) {
-					offTimes[num] = Main.elapsedTime;
-					keyboard.currentSynthDef.do { |sd|
+					}) {
 						sampleEvents[sd][num].dur ?? {
 							sampleEvents[sd][num].put(\dur, []);
 						};
 						sampleEvents[sd][num].dur = sampleEvents[sd][num].dur.add(onTime = offTimes[num] - onTimes[num]);
-					};
-					if (this.debug) { "[%] On time: %".format(sd, onTime).postln };
+						if (this.debug) { "[%] On time: %".format(sd, onTime).postln };
+					}
 				}
 			}
 		};
@@ -142,9 +139,10 @@ CVCenterKeyboardRecorder {
 			sampleEnd = Main.elapsedTime;
 			// FIXME: how do we get the right instrument in the sampled sequences?
 			synthDefNames.do { |sd|
+				"next SynthDef: '%'".format(sd).postln;
 				synthParams = keyboard.synthParams[sd];
 				pdef ?? { pdef = List[] };
-				sampleEvents.do { |e, num|
+				sampleEvents[sd].do { |e, num|
 					// add last event - not considered within noteOn, notOff
 					e.dur !? {
 						if (e.dur.last.isRest) {
@@ -154,62 +152,66 @@ CVCenterKeyboardRecorder {
 						};
 						e.dur = e.dur.add(last);
 						// [num, this.prDurSum(e.dur)].postln;
-					}
+					};
+					// "e: %".format(e).postln;
 				};
-				pbinds = sampleEvents.collect { |slot, num|
-					// slot.pairsDo { |k, v| [k, v].postln };
+				pbinds = sampleEvents[sd].collect { |slot, num|
+					slot.pairsDo { |k, v| [k, v].postln };
 					if (slot.isEmpty.not) {
-						items = [\instrument, sd, synthParams[sd].pitchControl, num.midicps]
+						items = [\instrument, sd, synthParams.pitchControl, num.midicps]
 						++ slot.collect(Pseq(_, inf)).asPairs;
 						pbproxy = Pbind.new.patternpairs_(items);
 					}
 				}.takeThese(_.isNil);
-				if (pbinds.notEmpty) {
-					var name, index;
-					// pbinds.do { |pb| pb.patternpairs.postln };
-					// pdef.add(Pdef((sd ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
-					name = (sd ++ "-" ++ cSample).asSymbol;
-					Ndef(name).mold(2, \audio, \elastic);
-					Ndef(name)[0] = Pdef(name, Ppar(pbinds, inf));
-					// Ndef(name)[1] = \filter -> { |in|
-					// 	In.ar(in, 2).checkBadValues * \amp.kr(1, spec: \amp.asSpec)
-					// };
-					Ndef(name).play;
-					pdef.add(Ndef(name));
-					#sampleStart, sampleEnd = nil!2;
-					ampWdgtName = "[%] % amp".format(keyboard.keyboardDefName, name).asSymbol;
-					pauseWdgtName = "[%] % pause".format(keyboard.keyboardDefName, name ).asSymbol;
-					removeWdgtName = "[%] % remove".format(keyboard.keyboardDefName, name).asSymbol;
-					{
-						CVCenter.use(ampWdgtName, \amp, 1.0, tab: "player: %".format(keyboard.keyboardDefName).asSymbol);
-						CVCenter.addActionAt(ampWdgtName, 'set seq amp', { |cv| Ndef(name).set(\amp, cv.value )});
-						CVCenter.use(pauseWdgtName, \false, tab:  "player: " ++ keyboard.keyboardDefName).asSymbol;
-						CVCenter.addActionAt(pauseWdgtName,
-							'pause/resume sequence',
-							{ |cv|
-								if (cv.input.asBoolean) { Ndef(name).pause } { Ndef(name).resume }
-							}
-						);
-						CVCenter.use(removeWdgtName, \false, tab: "player: %".format(keyboard.keyboardDefName).asSymbol);
-						CVCenter.addActionAt(
-						removeWdgtName,
-							'remove sequence',
-							{ |cv|
-								if (cv.input.asBoolean) { this.clearSequences(name) }
-							}
-						);
-						keyboard.touchOSC !? {
-							keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[cSample-1], name);
-							keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[cSample-1], 1.0);
-							CVCenter.cvWidgets[ampWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqAmpCmds[cSample-1]);
-							CVCenter.cvWidgets[pauseWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqPauseResumeCmds[cSample-1]);
-							CVCenter.cvWidgets[removeWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveCmds[cSample-1]);
-						};
-						cSample = cSample + 1;
-						this.prAddCVActions(sd, name);
-						"\nsampling keyboard events finished, should start playing now\n".inform;
-					}.defer
-				}
+				pbinds.do { |pb|
+					"pbind['%'] patternpairs: %".format(sd, pb.patternpairs).postln;
+				};
+				// if (pbinds.notEmpty) {
+				// 	var name, index;
+				// 	// pbinds.do { |pb| pb.patternpairs.postln };
+				// 	// pdef.add(Pdef((sd ++ "-" ++ (pdef.size)).asSymbol, Ppar(pbinds, inf)));
+				// 	name = (sd ++ "-" ++ cSample).asSymbol;
+				// 	Ndef(name).mold(2, \audio, \elastic);
+				// 	Ndef(name)[0] = Pdef(name, Ppar(pbinds, inf));
+				// 	// Ndef(name)[1] = \filter -> { |in|
+				// 	// 	In.ar(in, 2).checkBadValues * \amp.kr(1, spec: \amp.asSpec)
+				// 	// };
+				// 	Ndef(name).play;
+				// 	pdef.add(Ndef(name));
+				// 	#sampleStart, sampleEnd = nil!2;
+				// 	ampWdgtName = "[%] % amp".format(keyboard.keyboardDefName, name).asSymbol;
+				// 	pauseWdgtName = "[%] % pause".format(keyboard.keyboardDefName, name ).asSymbol;
+				// 	removeWdgtName = "[%] % remove".format(keyboard.keyboardDefName, name).asSymbol;
+				// 	{
+				// 		CVCenter.use(ampWdgtName, \amp, 1.0, tab: "player: %".format(keyboard.keyboardDefName).asSymbol);
+				// 		CVCenter.addActionAt(ampWdgtName, 'set seq amp', { |cv| Ndef(name).set(\amp, cv.value )});
+				// 		CVCenter.use(pauseWdgtName, \false, tab:  "player: " ++ keyboard.keyboardDefName).asSymbol;
+				// 		CVCenter.addActionAt(pauseWdgtName,
+				// 			'pause/resume sequence',
+				// 			{ |cv|
+				// 				if (cv.input.asBoolean) { Ndef(name).pause } { Ndef(name).resume }
+				// 			}
+				// 		);
+				// 		CVCenter.use(removeWdgtName, \false, tab: "player: %".format(keyboard.keyboardDefName).asSymbol);
+				// 		CVCenter.addActionAt(
+				// 			removeWdgtName,
+				// 			'remove sequence',
+				// 			{ |cv|
+				// 				if (cv.input.asBoolean) { this.clearSequences(name) }
+				// 			}
+				// 		);
+				// 		keyboard.touchOSC !? {
+				// 			keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[cSample-1], name);
+				// 			keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[cSample-1], 1.0);
+				// 			CVCenter.cvWidgets[ampWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqAmpCmds[cSample-1]);
+				// 			CVCenter.cvWidgets[pauseWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqPauseResumeCmds[cSample-1]);
+				// 			CVCenter.cvWidgets[removeWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveCmds[cSample-1]);
+				// 		};
+				// 		cSample = cSample + 1;
+				// 		this.prAddCVActions(sd, name);
+				// 		"\nsampling keyboard events finished, should start playing now\n".inform;
+				// 	}.defer
+				// }
 			} {
 				"\nnothing recorded, please try again\n".inform;
 			}
