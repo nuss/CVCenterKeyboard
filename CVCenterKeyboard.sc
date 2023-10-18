@@ -308,7 +308,7 @@ CVCenterKeyboard {
 			cv = namesCVs[synthDefName][i + 2];
 
 			if (argName === synthParams[synthDefName].pitchControl and: { tuning.notNil }) {
-				tuningAmendment = "+ CVCenter.at('%').value".format(synthParams[synthDefName].prefix ++ "Tuning")
+				tuningAmendment = " + CVCenter.at('%').value".format(synthParams[synthDefName].prefix ++ "Tuning")
 			} { tuningAmendment = "" };
 
 			CVCenter.cvWidgets[wdgtName] !? {
@@ -316,9 +316,9 @@ CVCenterKeyboard {
 					#[lo, hi].do { |slot|
 						var setString;
 						if (slot === \lo) {
-							setString = "[cv.value %, CVCenter.at('%').hi.value %]".format(tuningAmendment, wdgtName, tuningAmendment);
+							setString = "[cv.value%, CVCenter.at('%').hi.value%]".format(tuningAmendment, wdgtName, tuningAmendment);
 						} {
-							setString = "[CVCenter.at('%').lo.value %, cv.value %]".format(tuningAmendment, wdgtName, tuningAmendment);
+							setString = "[CVCenter.at('%').lo.value%, cv.value%]".format(wdgtName, tuningAmendment, tuningAmendment);
 						};
 						CVCenter.addActionAt(
 							wdgtName, 'keyboard set arg',
