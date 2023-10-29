@@ -243,17 +243,17 @@ CVCenterKeyboardRecorder {
 					p.source.clear;
 					p.clear;
 					keyboard.touchOSC !? {
-						"resetting TouchOSC sequence display at index %".format(i-1).postln;
+						"resetting TouchOSC sequence display at index %".format(i-1).inform;
 						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[i-1], "");
 						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[i-1], 0.0);
 						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqPauseResumeCmds[i-1], 0.0);
 					};
 					fork ({
-						"removing CVCenter widget '[%] % amp'".format(keyboard.keyboardDefName, p.key).postln;
+						"removing CVCenter widget '[%] % amp'".format(keyboard.keyboardDefName, p.key).inform;
 						CVCenter.removeAt(("[%] % amp".format(keyboard.keyboardDefName, p.key)).asSymbol);
-						"removing CVCenter widget '[%] % pause'".format(keyboard.keyboardDefName, p.key).postln;
+						"removing CVCenter widget '[%] % pause'".format(keyboard.keyboardDefName, p.key).inform;
 						CVCenter.removeAt(("[%] % pause".format(keyboard.keyboardDefName, p.key)).asSymbol);
-						"removing CVCenter widget '[%] % remove'".format(keyboard.keyboardDefName, p.key).postln;
+						"removing CVCenter widget '[%] % remove'".format(keyboard.keyboardDefName, p.key).inform;
 						CVCenter.removeAt(("[%] % remove".format(keyboard.keyboardDefName, p.key)).asSymbol);
 					}, AppClock)
 				};
@@ -268,16 +268,20 @@ CVCenterKeyboardRecorder {
 					Ndef(k).source.clear;
 					Ndef(k).clear;
 					keyboard.touchOSC !? {
+						"resetting TouchOSC sequence display at index %".format(i).inform;
 						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[i], "");
 						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[i], 0.0);
 						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqPauseResumeCmds[i], 0.0);
 					};
 					pdef.removeAt(i);
-					{
+					fork({
+						"removing CVCenter widget '[%] % amp'".format(keyboard.keyboardDefName, k).inform;
 						CVCenter.removeAt(("[%] % amp".format(keyboard.keyboardDefName, k)).asSymbol);
+						"removing CVCenter widget '[%] % pause'".format(keyboard.keyboardDefName, k).inform;
 						CVCenter.removeAt(("[%] % pause".format(keyboard.keyboardDefName, k)).asSymbol);
+						"removing CVCenter widget '[%] % remove'".format(keyboard.keyboardDefName, k).inform;
 						CVCenter.removeAt(("[%] % remove".format(keyboard.keyboardDefName, k)).asSymbol);
-					}.defer;
+					}, AppClock);
 					if (pdef.size == 0) { cSample = 1 };
 				};
 			}
