@@ -1,6 +1,6 @@
 CVCenterKeyboardRecorder {
 	classvar <all;
-	var <keyboard;
+	var <keyboard, tOSCtrackNums, usedTracks;
 	var isSampling = false;
 	var sampleStart, sampleEnd, onTimes, offTimes;
 	var sampleOnFunc, sampleOffFunc, sampleEvents;
@@ -39,6 +39,8 @@ CVCenterKeyboardRecorder {
 		);
 		if (keyboard.touchOSC.notNil) {
 			CVCenter.cvWidgets[removeAllWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveAllCmd);
+			tOSCtrackNums = keyboard.touchOSC.class.trackNums.copy;
+			usedTracks = ();
 		};
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues, noteIndex;
@@ -210,12 +212,16 @@ CVCenterKeyboardRecorder {
 				}
 			);
 			keyboard.touchOSC !? {
-				"SynthDef: % (count: %)\nampWdgtName: %\npauseWdgtName: %\nremoveWdgtName: %".format(synthDef, tOSCCount, ampWdgtName, pauseWdgtName, removeWdgtName).postln;
-				keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[tOSCCount], name);
-				keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[tOSCCount], 1.0);
-				CVCenter.cvWidgets[ampWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqAmpCmds[tOSCCount]);
-				CVCenter.cvWidgets[pauseWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqPauseResumeCmds[tOSCCount]);
-				CVCenter.cvWidgets[removeWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveCmds[tOSCCount]);
+				// "\nbefore: usedTracks: %\ntOSCtrackNums: %\n".format(usedTracks, tOSCtrackNums).postln;
+				// "SynthDef: % (count: %)\nampWdgtName: %\npauseWdgtName: %\nremoveWdgtName: %\ntOSCtrackNums[0]: %".format(synthDef, tOSCCount, ampWdgtName, pauseWdgtName, removeWdgtName, tOSCtrackNums[0]).postln;
+				keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[tOSCtrackNums[0]-1], name);
+				keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[tOSCtrackNums[0]-1], 1.0);
+				CVCenter.cvWidgets[ampWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqAmpCmds[tOSCtrackNums[0]-1]);
+				CVCenter.cvWidgets[pauseWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqPauseResumeCmds[tOSCtrackNums[0]-1]);
+				CVCenter.cvWidgets[removeWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveCmds[tOSCtrackNums[0]-1]);
+				usedTracks.put(name, tOSCtrackNums[0]);
+				tOSCtrackNums.removeAt(0);
+				// "\nafter: usedTracks: %\ntOSCtrackNums: %\n".format(usedTracks, tOSCtrackNums).postln;
 			};
 			this.prAddCVActions(synthDef, name);
 			tOSCCount = tOSCCount + 1;
@@ -260,6 +266,10 @@ CVCenterKeyboardRecorder {
 				pdef.clear;
 				// reset counter
 				cSample = 1;
+				keyboard.touchOSC !? {
+					tOSCtrackNums = keyboard.touchOSC.class.trackNums.copy;
+					usedTracks = ();
+				};
 			} {
 				keys.do { |k|
 					if (k.class == String) { k = k.asSymbol };
@@ -269,9 +279,13 @@ CVCenterKeyboardRecorder {
 					Ndef(k).clear;
 					keyboard.touchOSC !? {
 						"resetting TouchOSC sequence display at index %".format(i).inform;
-						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[i], "");
-						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[i], 0.0);
-						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqPauseResumeCmds[i], 0.0);
+						// "\nbefore removal: usedTracks: %\ntOSCtrackNums: %\n".format(usedTracks, tOSCtrackNums).postln;
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[usedTracks[k]-1].postln, "");
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[usedTracks[k]-1].postln, 0.0);
+						keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqPauseResumeCmds[usedTracks[k]-1].postln, 0.0);
+						tOSCtrackNums = tOSCtrackNums.add(keyboard.touchOSC.class.trackNums[i]);
+						usedTracks[k] = nil;
+						// "\nafter removal: usedTracks: %\ntOSCtrackNums: %\n".format(usedTracks, tOSCtrackNums).postln;
 					};
 					pdef.removeAt(i);
 					fork({
