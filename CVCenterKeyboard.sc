@@ -537,6 +537,9 @@ CVCenterKeyboard {
 			Error("The given argument doesn't appear to be a valid NetAddr").throw;
 		} {
 			touchOSC = CVCenterKeyboardTouchOSC(this, addr);
+			recorder !? {
+				recorder.initRecorderTouchOSC;
+			}
 		}
 	}
 

@@ -5,6 +5,7 @@ CVCenterKeyboardRecorder {
 	var sampleStart, sampleEnd, onTimes, offTimes;
 	var sampleOnFunc, sampleOffFunc, sampleEvents;
 	var <pdef, cSample = 1/*, tOSCCount = 0*/;
+	var <removeAllWdgtName;
 	var <>debug = false;
 	// var onc = 1, offc = 1;
 
@@ -17,8 +18,6 @@ CVCenterKeyboardRecorder {
 	}
 
 	init {
-		var removeAllWdgtName;
-
 		keyboard ?? {
 			"[CVCenterKeyboardRecorder] No CVCenterKeyboard instance given!".error;
 			^nil
@@ -38,9 +37,7 @@ CVCenterKeyboardRecorder {
 			}".format(keyboard.keyboardDefName)
 		);
 		if (keyboard.touchOSC.notNil) {
-			CVCenter.cvWidgets[removeAllWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveAllCmd);
-			tOSCtrackNums = keyboard.touchOSC.class.trackNums.copy;
-			usedTracks = ();
+			this.initRecorderTouchOSC;
 		};
 		sampleOnFunc = { |veloc, num, chan, src|
 			var kbArgs, argsValues, noteIndex;
@@ -126,6 +123,12 @@ CVCenterKeyboardRecorder {
 		};
 		keyboard.on.add(sampleOnFunc);
 		keyboard.off.add(sampleOffFunc);
+	}
+
+	initRecorderTouchOSC {
+		CVCenter.cvWidgets[removeAllWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveAllCmd);
+		tOSCtrackNums = keyboard.touchOSC.class.trackNums.copy;
+		usedTracks = ();
 	}
 
 	record { |onOff|
