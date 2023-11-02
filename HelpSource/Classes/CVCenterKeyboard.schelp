@@ -98,7 +98,7 @@ argument:: synthDefName
 A link::Classes/String:: or an link::Classes/Symbol::, denoting the name of the SynthDef.
 
 METHOD:: setUpControls
-Whenever a new link::Classe/SynthDef:: is added, either by creating a new instance by calling link::#*newSynthDef:: or adding a link::Classe/SynthDef:: with link::#-addSynthDef::, the CVCenterKeyboard instance must be set up for the new link::Classe/SynthDef::. This will configure code::outControl::, code::keyboardControl::, code::velocControl:: and code::bendControl:: as well as it will create link::Classes/CVWidget::s for all other controls in the  link::Classe/SynthDef::. It should be possible to call this method repeatedly, so you can update an existing link::Classe/SynthDef:: while it's already being used.
+Whenever a new link::Classes/SynthDef:: is added, either by creating a new instance by calling link::#*newSynthDef:: or adding a link::Classes/SynthDef:: with link::#-addSynthDef::, the CVCenterKeyboard instance must be set up for the new link::Classes/SynthDef::. This will configure code::outControl::, code::keyboardControl::, code::velocControl:: and code::bendControl:: as well as it will create link::Classes/CVWidget::s for all other controls in the  link::Classes/SynthDef::. It should be possible to call this method repeatedly, so you can update an existing link::Classes/SynthDef:: while it's already being used.
 argument:: synthDefName
 The link::Classes/SynthDef::'s name, given as link::Classes/Symbol:: or link::Classes/String::
 argument:: prefix
@@ -111,8 +111,8 @@ argument:: bendControl
 A link::Classes/Symbol:: or link::Classes/String:: referencing the control to be set by the pitch bend wheel. Default: code::\bend::.
 argument:: outControl
 A link::Classes/Symbol:: or link::Classes/String:: referencing the output bus. Default: code::\out::.
-argument:: includeInCVCenter
-An link::Classes/Array:: of link::Classes/Symbol::s or link::Classes/String::s, denoting those of the before described arguments which emphasis::should:: appear in link::Classes/CVCenter:: though they have already been assigned to the keyboard.
+argument:: tuning
+An link::Classes/ControlSpec::. If set the given SynthDef may be 'tuned' using an extra link::Classes/CVWidget::. The given ControlSpec determines the range of possible tuning.
 argument:: theServer
 Optional - the link::Classes/Server:: to run the link::Classes/Synth::s on produced with every keystroke.
 argument:: outbus
@@ -178,10 +178,10 @@ Spec.add(\which, #[0, 2]);
 ::
 
 METHOD:: setSynthDef
-This method may be called emphasis::implicitly:: for every new link::Classes/SynthDef:: in link::#-setUpControls:: by adding an argument code::setSynthDef:: set to code::true:: or it may be called emphasis::explicitly:: to switch between currently stored SynthDefs within the CVCenterKeyboard instance.
+This method may be called emphasis::implicitly:: for every new link::Classes/SynthDef:: in link::#-setUpControls:: by adding an argument code::setSynthDef:: set to code::true:: or it may be called emphasis::explicitly:: to switch between currently stored SynthDefs or to play more than one SynthDef at the same time within the CVCenterKeyboard instance.
 
-argument:: synthDefName
-A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be selected.
+argument:: ... synthDefName
+One or more link::Classes/String::s or a link::Classes/Symbol::s, denoting the link::Classes/SynthDef::(s) to be selected. If more than one SynthDef is given the keys triggering one of the SynthDefs will be equally distributed over the link::#-keyBlockSize::. I.e. by default the link::#-keyBlockSize:: will extend over 24 keys on the keyboard (two octaves). The keys triggering one of the given SynthDefs will (more or less) be equally distributed over the given block (the code::keyBlockSize:: may not be divisible by the number of SynthDefs and therefore the number of keys for each SynthDef may not be exactly equal). Note that the order of arguments matters: The first argument (SynthDef) will take the lowest keys, the next one the keys to the right of the first one and the last one the highest keys in the block.
 
 DISCUSSION::
 code::
@@ -218,19 +218,42 @@ SynthDef(\syncSaw, {
 )
 )
 
-// switch to the just added new SynthDef
+// switch to the just added new SynthDef and play...
 ~kb.setSynthDef(\syncSaw)
 
-// play...
+// play two different SynthDefs on the same keyboard
+~kb.setSynthDef(\syncSaw, \multi)
 
-// switch back to the other SynthDef
+// switch back to a single SynthDef
 ~kb.setSynthDef(\multi)
+
+// swap order of the SynthDefs on the keyboard
+~kb.setSynthDef(\multi, \syncSaw)
 ::
 
+METHOD:: keyBlockSize
+This method lets you either read or set the number of keys over which two or more link::Classes/SynthDef::s are being distributed that have been set by calling link::#-setSynthDef::. By default it will be 24 (two octaves). You can set a new value at any time and the CVCenterKeyboard instance should pick up the new value immediately.
+returns:: an link::Classes/Integer::
+
+METHOD:: distribution
+By default keys for different link::Classes/SynthDef::s in a CVCenterKeyboard instance that has been set to more than one SynthDef by calling link::#-setSynthDef:: will be distributed (more or less) equally over the given link::#-keyBlockSize::. This method, however, allows you to set the number of keys for the SynthDefs unequally. If you e.g. have two SynthDefs distributed over 24 keys each of them will occupy twelve keys within that link::#-keyBlockSize::. You can change that by executing
+
+code::~kb.distribution_([8, 16])::
+
+to eight keys for the first SynthDef and 16 keys for the second SynthDef. If the given array sums to the link::#-keyBlockSize:: it should be guaranteed that the number of keys playing one of the SynthDefs is exactly equal to the number given in the array code::ratios::. If you change the link::#-keyBlockSize:: later, however, emphasis::the ratio of the keys should be kept!::. I.e. executing the following to line will first change the link::#-keyBlockSize:: and subsequently change the number of keys for the first SynthDef to 4 and the number of keys for the second SynthDef to 8.
+
+code::
+// should result in 4 keys for the first SynthDef and 8 keys for the second
+~kb.keyBlockSize_(12)
+::
+
+If code::ratios:: sums up to an even number and link::#-keyBlockSize:: is set to an odd number, the ratio of the number of keys will be approximated.
+returns:: an link::Classes/Array:: of link::Classes/Integer::s
+
 METHOD:: clear
-Clear link::Classes/SynthDef:: from a CVCenterKeyboard instance but don't remove it from the keyboard. This is used internally by link::#-setSynthDef:: before switching to a new SynthDef. You will usually not call this method directly.
-argument:: synthDefName
-A link::Classes/String:: or a link::Classes/Symbol::, denoting the link::Classes/SynthDef:: to be cleared.
+Clear one or more link::Classes/SynthDef::(s) from a CVCenterKeyboard instance but don't remove it from the keyboard. This is used internally by link::#-setSynthDef:: before switching to a new SynthDef. You will usually not call this method directly.
+argument:: ... synthDefName
+One or more link::Classes/String::s or a link::Classes/Symbol::s, denoting the link::Classes/SynthDef::(s) to be cleared.
 
 METHOD:: free
 Free the CVCenterKeyboard instance. You will not be able to use the CVCenterKeyboard instance any longer after calling this method.
@@ -295,7 +318,7 @@ METHOD:: debug
 Acttivate or deactivate debugging. If set to code::true:: various output from code::noteOn::, code::noteOff:: and code::bend:: events will be posted.
 
 METHOD:: currentSynthDef
-returns:: The name of the currently used SynthDef as link::Classes/Symbol::.
+			returns:: The name(s) of the currently used SynthDef(s) as an link::Claases/Array:: of link::Classes/Symbol::s.
 
 METHOD:: synthParams
 RETURNS:: An link::Classes/Event:: holding all link::Classes/ControlName::s of all currently stored link::Classes/SynthDef::s within a CVCenterKeyboard instance.
@@ -401,5 +424,5 @@ A link::Classes/Symbol:: referencing the link::Classes/ControlName:: whose contr
 METHOD:: mappedBusses
 returns:: An link::Classes/Event:: holding all currently mapped busses. The keys will be link::Classes/ControlName::s that get set by the bus(ses) referenced by the assigned bus indexes.
 
-PRIVATE:: init, initClass, prAddWidgetActionsForKeyboard, prEnvInit, prInitCVs, prInitSynthDef, prInitKeyboard
+PRIVATE:: init, initClass, prAddWidgetActionsForKeyboard, prEnvInit, prInitCVs, prInitSynthDef, prInitKeyboard, noteMatches
 
