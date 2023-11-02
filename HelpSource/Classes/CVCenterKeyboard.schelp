@@ -318,7 +318,7 @@ METHOD:: debug
 Acttivate or deactivate debugging. If set to code::true:: various output from code::noteOn::, code::noteOff:: and code::bend:: events will be posted.
 
 METHOD:: currentSynthDef
-returns:: The name(s) of the currently used SynthDef(s) as an link::Claases/Array:: of link::Classes/Symbol::s.
+returns:: The name(s) of the currently used SynthDef(s) as an link::Classes/Array:: of link::Classes/Symbol::s.
 
 METHOD:: synthParams
 RETURNS:: An link::Classes/Event:: holding all link::Classes/ControlName::s of all currently stored link::Classes/SynthDef::s within a CVCenterKeyboard instance.
