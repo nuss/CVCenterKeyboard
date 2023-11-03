@@ -181,7 +181,7 @@ METHOD:: setSynthDef
 This method may be called emphasis::implicitly:: for every new link::Classes/SynthDef:: in link::#-setUpControls:: by adding an argument code::setSynthDef:: set to code::true:: or it may be called emphasis::explicitly:: to switch between currently stored SynthDefs or to play more than one SynthDef at the same time within the CVCenterKeyboard instance.
 
 argument:: ... synthDefName
-One or more link::Classes/String::s or a link::Classes/Symbol::s, denoting the link::Classes/SynthDef::(s) to be selected. If more than one SynthDef is given the keys triggering one of the SynthDefs will be equally distributed over the link::#-keyBlockSize::. I.e. by default the link::#-keyBlockSize:: will extend over 24 keys on the keyboard (two octaves). The keys triggering one of the given SynthDefs will (more or less) be equally distributed over the given block (the code::keyBlockSize:: may not be divisible by the number of SynthDefs and therefore the number of keys for each SynthDef may not be exactly equal). Note that the order of arguments matters: The first argument (SynthDef) will take the lowest keys, the next one the keys to the right of the first one and the last one the highest keys in the block.
+One or more link::Classes/String::s or a link::Classes/Symbol::s, denoting the link::Classes/SynthDef::(s) to be selected. If more than one SynthDef is given the keys triggering one of the SynthDefs will be equally distributed over the link::#-keysBlockSize::. I.e. by default the link::#-keysBlockSize:: will extend over 24 keys on the keyboard (two octaves). The keys triggering one of the given SynthDefs will (more or less) be equally distributed over the given block (the code::keysBlockSize:: may not be divisible by the number of SynthDefs and therefore the number of keys for each SynthDef may not be exactly equal). Note that the order of arguments matters: The first argument (SynthDef) will take the lowest keys, the next one the keys to the right of the first one and the last one the highest keys in the block.
 
 DISCUSSION::
 code::
@@ -231,24 +231,34 @@ SynthDef(\syncSaw, {
 ~kb.setSynthDef(\multi, \syncSaw)
 ::
 
-METHOD:: keyBlockSize
+SUBSECTION:: Using multiple SynthDefs on one keyboard
+
+As you may already have recognized you can use more than one SynthDef on one physical keyboard. When doing so by calling link::#-setSynthDef:: with more than one SynthDef the keys are being equally distributed over a predefined block of keys (by default 24 keys or two octaves). The blocks will repeat over the full range of 128 MIDI notes, beginning at MIDI note code::0::. Here are some schematic examples using two SynthDefs on a three-octaves keyboard FOOTNOTE:: Original illustration by Tobias R., licensed under link::https://creativecommons.org/licenses/by-sa/2.5##CC BY-SA 2.5::, link::https://en.wikipedia.org/wiki/Musical_keyboard#/media/File:Klaviatur-3-en.svg:::::
+
+IMAGE::3-octaves-2-synths-blocksize-24-ratio-12-12.png::
+IMAGE::3-octaves-2-synths-blocksize-24-ratio-8-16.png::
+IMAGE::3-octaves-2-synths-blocksize-12-ratio-6-6.png::
+
+METHOD:: keysBlockSize
 This method lets you either read or set the number of keys over which two or more link::Classes/SynthDef::s are being distributed that have been set by calling link::#-setSynthDef::. By default it will be 24 (two octaves). You can set a new value at any time and the CVCenterKeyboard instance should pick up the new value immediately.
 returns:: an link::Classes/Integer::
 
-METHOD:: distribution
-By default keys for different link::Classes/SynthDef::s in a CVCenterKeyboard instance that has been set to more than one SynthDef by calling link::#-setSynthDef:: will be distributed (more or less) equally over the given link::#-keyBlockSize::. This method, however, allows you to set the number of keys for the SynthDefs unequally. If you e.g. have two SynthDefs distributed over 24 keys each of them will occupy twelve keys within that link::#-keyBlockSize::. You can change that by executing
+METHOD:: keysDistribution
+By default keys for different link::Classes/SynthDef::s in a CVCenterKeyboard instance that has been set to more than one SynthDef by calling link::#-setSynthDef:: will be distributed (more or less) equally over the given link::#-keysBlockSize::. This method, however, allows you to set the number of keys for the SynthDefs unequally. If you e.g. have two SynthDefs distributed over 24 keys each of them will occupy twelve keys within that link::#-keysBlockSize::. You can change that by executing
 
-code::~kb.distribution_([8, 16])::
+code::~kb.keysDistribution_([8, 16])::
 
-to eight keys for the first SynthDef and 16 keys for the second SynthDef. If the given array sums to the link::#-keyBlockSize:: it should be guaranteed that the number of keys playing one of the SynthDefs is exactly equal to the number given in the array code::ratios::. If you change the link::#-keyBlockSize:: later, however, emphasis::the ratio of the keys should be kept!::. I.e. executing the following to line will first change the link::#-keyBlockSize:: and subsequently change the number of keys for the first SynthDef to 4 and the number of keys for the second SynthDef to 8.
+to eight keys for the first SynthDef and 16 keys for the second SynthDef. If the given array sums to the link::#-keysBlockSize:: it should be guaranteed that the number of keys playing one of the SynthDefs is exactly equal to the number given in the array code::ratios::. If you change the link::#-keysBlockSize:: later, however, emphasis::the ratio of the keys should be kept::. I.e. executing the following to line will first change the link::#-keysBlockSize:: and subsequently change the number of keys for the first SynthDef to 4 and the number of keys for the second SynthDef to 8.
 
 code::
 // should result in 4 keys for the first SynthDef and 8 keys for the second
-~kb.keyBlockSize_(12)
+~kb.keysBlockSize_(12)
 ::
 
-If code::ratios:: sums up to an even number and link::#-keyBlockSize:: is set to an odd number, the ratio of the number of keys will be approximated.
+If code::ratios:: sums up to an even number and link::#-keysBlockSize:: is set to an odd number, the ratio of the number of keys will be approximated.
 returns:: an link::Classes/Array:: of link::Classes/Integer::s
+
+SUBSECTION:: Other utility methods
 
 METHOD:: clear
 Clear one or more link::Classes/SynthDef::(s) from a CVCenterKeyboard instance but don't remove it from the keyboard. This is used internally by link::#-setSynthDef:: before switching to a new SynthDef. You will usually not call this method directly.
