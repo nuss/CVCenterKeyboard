@@ -127,4 +127,4 @@ The widget labeled code::[<keyboard name>] remove all sequences:: removes all re
 
 
 
-PRIVATE:: initClass, init, prAddCVActions, prResetSampling
+PRIVATE:: initClass, init, prAddCVActions, prResetSampling, removeAllWdgtName, initRecorderTouchOSC, prAddSequenceWidgets

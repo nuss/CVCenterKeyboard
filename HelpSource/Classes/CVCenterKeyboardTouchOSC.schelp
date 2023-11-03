@@ -47,17 +47,22 @@ A link::Classes/NetAddr:: referring to the IP address of the external OSC device
 METHOD:: all
 returns:: An link::Classes/Event:: holding all current CVCenterTouchOSC instances.
 
+METHOD:: trackNums
+An link::Classes/Array:: of link::Classes/Integer::s reflecting the number of tracks (= sequences) in the TouchOSC interface - by default 24. Trck numbering should always start at code::0::. code::CVCenterKeyboardTouchOSC.trackNums:: is used internally for bookkeeping of currently used tracks in the TouchOSC interface. Basiscally you can record as many sequences as you like using link::Classes/CVCenterKeyboardRecorder::. However, the TouchOSC interface can only display as many tracks as determined by the size of code::CVCenterKeyboardTouchOSC.trackNums::. Nevertheless, as long as you don't exceed that limit it should be guaranteed that the TouchOSC interface will display a recorded sequence and let you control it via its touch interface.
+
 SUBSECTION:: Predefined OSC commands
 The included TouchOSC layout will work with a few predefined OSC commands that are also reflected in this class' classvars. Each of the following are getters and setters, meaning you may adapt them according to your needs. E.g. the commands stored in code::CVCenterKeyboardTouchOSC.seqAmpCmds:: will allow you to set the amplitude of sequences recorded by a link::Classes/CVCenterKeyboardRecorder::. By default there are 24 for up to 24 different sequences defined. You may wish to in- or decrease that number or change the commands itself:
 
 code::
-// return an array of 24 commands ranging from "/seq_1_amp" to "/seq_24_amp"
+// return an array of 24 commands ranging from "/seq_0_amp" to "/seq_23_amp"
 CVCenterKeyboardTouchOSC.seqAmpCmds;
-// reduce number of commands to 10 and change name to "/seq/amp/1" to "/seq/amp/10"
-CVCenterKeyboardTouchOSC.seqAmpCmds_((1..10).collect({ |i| "/seq/amp/" ++ i }));
+// change number of tracks to 10
+CVCenterKeyboardTouchOSC.trackNums_((0..9));
+// reduce number of commands to 10 and change name to "/seq/amp/0" to "/seq/amp/9"
+CVCenterKeyboardTouchOSC.seqAmpCmds_(CVCenterKeyboardTouchOSC.trackNums.collect({ |i| "/seq/amp/" ++ i }));
 ::
 
-The above described calls can also be place in the startup file to make changes permanent.
+The above described calls can also be placed in the startup file to make changes permanent.
 
 METHOD:: seqAmpCmds
 Set or get the class-wide commands for setting the amplitudes of sequences recorded by a link::Classes/CVCenterKeyboardRecorder:: instance.
@@ -83,7 +88,7 @@ METHOD:: addr
 returns:: The instance's link::Classes/NetAddr::, referring to the IP address of the external OSC device or application.
 
 SUBSECTION:: Predefined OSC commands in instances
-The following instance vars (all of the are getters strong::and:: setters) work analog to their equivalent classvars. You may have more than one link::Classes/CVCenterKeyboard:: instance defined, for which you need different OSC command names (or namespaces).
+The following instance vars (all of them are getters strong::and:: setters) work analog to their equivalent classvars. You may have more than one link::Classes/CVCenterKeyboard:: instance defined, for which you need different OSC command names (or namespaces).
 
 METHOD:: seqNameCmds
 argument:: cmdsList
