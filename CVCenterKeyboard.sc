@@ -3,7 +3,7 @@ CVCenterKeyboard {
 	var <keyboardDefName, <synthDefNames, <synthParams, wdgtName, <touchOSC;
 	var <>bendSpec, <>out, <server, <group, tunings;
 	var <currentSynthDef, wdgtNames, <outProxy;
-	var <distribution, prKeyBlockSize, <noteMatches;
+	var <keysDistribution, prKeysBlockSize, <noteMatches;
 	var <recorder, sampling = false, sampleEvents;
 	var <on, <off, <bend, <namesCVs, onTimes, offTimes, sampleStart, sampleEnd;
 	var <onFuncs, <offFuncs, <bendFuncs; // 3 Events noteOn/noteOff/bend funcs for each SynthDef. Must be added with SynthDef
@@ -48,13 +48,13 @@ CVCenterKeyboard {
 		group = ParGroup.new;
 		tunings = ();
 		synthDefNames = List[];
-		prKeyBlockSize = Ref(24);
-		prKeyBlockSize.addDependant({
-			// re-calculate distribution if keyBlockSize changes
-			// in contrary, a distribution change should never change keyBlockSize
-			this.distribution_(distribution)
+		prKeysBlockSize = Ref(24);
+		prKeysBlockSize.addDependant({
+			// re-calculate keysDistribution if keysBlockSize changes
+			// in contrary, a keysDistribution change should never change keysBlockSize
+			this.keysDistribution_(keysDistribution)
 		});
-		// "dependantsDictionary[%]: %".format(prKeyBlockSize, dependantsDictionary[prKeyBlockSize]).postln;
+		// "dependantsDictionary[%]: %".format(prKeysBlockSize, dependantsDictionary[prKeysBlockSize]).postln;
 		if (MIDIClient.initialized.not) {
 			MIDIClient.init;
 			// doesn't seem to work properly on Ubuntustudio 16
@@ -83,39 +83,39 @@ CVCenterKeyboard {
 		CVCenter.use(keyboardDefName, tab: \default, svItems: ['select Synth...'])
 	}
 
-	distribution_ { |ratios|
+	keysDistribution_ { |ratios|
 		var n = currentSynthDef.size;
-		var kbs = this.keyBlockSize;
+		var kbs = this.keysBlockSize;
 		var t, p1, matches;
 
 		if (n <= 1) {
-			#noteMatches, distribution = nil!2;
+			#noteMatches, keysDistribution = nil!2;
 		} {
 			if (ratios.isNil) {
 				t = (kbs / n).round;
 				if (t * n == kbs) {
-					distribution = t ! n;
+					keysDistribution = t ! n;
 				} {
 					p1 = t ! (n-1);
-					distribution = p1 ++ (kbs - p1.sum);
+					keysDistribution = p1 ++ (kbs - p1.sum);
 				}
 			} {
 				if (ratios.sum != kbs) {
-					distribution = (ratios.normalizeSum * kbs).round;
-					distribution = [kbs - distribution[1..].sum] ++ distribution[1..];
+					keysDistribution = (ratios.normalizeSum * kbs).round;
+					keysDistribution = [kbs - keysDistribution[1..].sum] ++ keysDistribution[1..];
 				} {
-					distribution = ratios;
+					keysDistribution = ratios;
 				}
 			};
 
 			// we're only interested in the SynthDef at index i within the SynthDef's names that have been passed in
-			distribution !? {
+			keysDistribution !? {
 				noteMatches = List[];
-				distribution.do { |n, i|
+				keysDistribution.do { |n, i|
 					matches = { |num| num } ! n;
 					if (i > 0) {
-						// add size of previous distribution block to n to get value to check against synthDefIndex
-						matches = matches + distribution[..i-1].sum;
+						// add size of previous keysDistribution block to n to get value to check against synthDefIndex
+						matches = matches + keysDistribution[..i-1].sum;
 					};
 					noteMatches.add(matches)
 				}
@@ -123,12 +123,12 @@ CVCenterKeyboard {
 		}
 	}
 
-	keyBlockSize_ { |size|
-		prKeyBlockSize.value_(size).changed(\value);
+	keysBlockSize_ { |size|
+		prKeysBlockSize.value_(size).changed(\value);
 	}
 
-	keyBlockSize {
-		^prKeyBlockSize.value
+	keysBlockSize {
+		^prKeysBlockSize.value
 	}
 
 	addSynthDef { |synthDefName|
@@ -341,8 +341,8 @@ CVCenterKeyboard {
 		this.clear;
 		group.free;
 		currentSynthDef = synthDefName;
-		// trigger this.distribution_
-		prKeyBlockSize.changed;
+		// trigger this.keysDistribution_
+		prKeysBlockSize.changed;
 		this.prEnvInit(synthDefName);
 		this.prInitKeyboard(synthDefName);
 		synthDefName.do { |name|
@@ -433,8 +433,7 @@ CVCenterKeyboard {
 				argsValues = kbArgs ++ valuePairs[name];
 				// "%: argsValues: %".format(argsValues).postln;
 				// do distribution-based SynthDef selection here
-				// expect distribution always to be the same size as currentSynthDef?
-				noteIndex = num % this.keyBlockSize;
+				noteIndex = num % this.keysBlockSize;
 				// check...
 				// "noteMatches: %".format(noteMatches).postln;
 				if (noteMatches.isNil or: { noteMatches[i].includesEqual(noteIndex) }) {

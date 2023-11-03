@@ -53,7 +53,7 @@ CVCenterKeyboardRecorder {
 			} {
 				if (isSampling) {
 					onTimes[num] = Main.elapsedTime;
-					noteIndex = num % keyboard.keyBlockSize;
+					noteIndex = num % keyboard.keysBlockSize;
 					keyboard.currentSynthDef.do { |sd, i|
 						if (keyboard.noteMatches.isNil or: {
 							keyboard.noteMatches[i].includesEqual(noteIndex)
@@ -106,7 +106,7 @@ CVCenterKeyboardRecorder {
 			};
 
 			if (isSampling) {
-				noteIndex = num % keyboard.keyBlockSize;
+				noteIndex = num % keyboard.keysBlockSize;
 				offTimes[num] = Main.elapsedTime;
 				keyboard.currentSynthDef.do { |sd, i|
 					if (keyboard.noteMatches.isNil or: {
