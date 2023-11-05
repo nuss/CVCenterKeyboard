@@ -54,7 +54,6 @@ CVCenterKeyboard {
 			// in contrary, a keysDistribution change should never change keysBlockSize
 			this.keysDistribution_(keysDistribution)
 		});
-		// "dependantsDictionary[%]: %".format(prKeysBlockSize, dependantsDictionary[prKeysBlockSize]).postln;
 		if (MIDIClient.initialized.not) {
 			MIDIClient.init;
 			// doesn't seem to work properly on Ubuntustudio 16
@@ -151,7 +150,6 @@ CVCenterKeyboard {
 		};
 		this.clear(synthDefName);
 		[onFuncs, offFuncs].do { |f| f[synthDefName] = nil };
-		// CVCenter.scv[keyboardDefName].removeAt(synthDefName);
 	}
 
 	*at { |keyboardDefName|
@@ -197,9 +195,6 @@ CVCenterKeyboard {
 		velocControl = velocControl.asSymbol;
 		bendControl = bendControl.asSymbol;
 		outControl = outControl.asSymbol;
-		// includeInCVCenter !? {
-		// 	includeInCVCenter = includeInCVCenter.collect { |name| name.asSymbol }
-		// };
 
 		synthDefName = synthDefName.asSymbol;
 		tuning !? {
@@ -233,27 +228,19 @@ CVCenterKeyboard {
 		};
 		outControl !? {
 			synthParams[synthDefName].outControl = outControl;
-			// includeInCVCenter.includes(outControl).not.if {
 			excemptArgs = excemptArgs.add(outControl)
-			// }
 		};
 		pitchControl !? {
 			synthParams[synthDefName].pitchControl = pitchControl;
-			// includeInCVCenter.includes(pitchControl).not.if {
 			excemptArgs = excemptArgs.add(pitchControl)
-			// }
 		};
 		velocControl !? {
 			synthParams[synthDefName].velocControl = velocControl;
-			// includeInCVCenter.includes(velocControl).not.if {
 			excemptArgs = excemptArgs.add(velocControl)
-			// }
 		};
 		bendControl !? {
 			synthParams[synthDefName].bendControl = bendControl;
-			// includeInCVCenter.includes(bendControl).not.if {
 			excemptArgs = excemptArgs.add(bendControl)
-			// }
 		};
 		outbus !? { this.out_(outbus) };
 
@@ -431,11 +418,9 @@ CVCenterKeyboard {
 				}.flatten(1);
 				valuePairs[name] = pairs[name].deepCollect(2, _.value);
 				argsValues = kbArgs ++ valuePairs[name];
-				// "%: argsValues: %".format(argsValues).postln;
 				// do distribution-based SynthDef selection here
 				noteIndex = num % this.keysBlockSize;
 				// check...
-				// "noteMatches: %".format(noteMatches).postln;
 				if (noteMatches.isNil or: { noteMatches[i].includesEqual(noteIndex) }) {
 					CVCenter.scv[keyboardDefName][name][num] = Synth(name, argsValues, group);
 					if (this.debug) {

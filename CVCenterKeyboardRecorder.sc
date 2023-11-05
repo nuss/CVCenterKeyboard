@@ -4,10 +4,9 @@ CVCenterKeyboardRecorder {
 	var isSampling = false;
 	var sampleStart, sampleEnd, onTimes, offTimes;
 	var sampleOnFunc, sampleOffFunc, sampleEvents;
-	var <pdef, cSample = 1/*, tOSCCount = 0*/;
+	var <pdef, cSample = 1;
 	var <removeAllWdgtName;
 	var <>debug = false;
-	// var onc = 1, offc = 1;
 
 	*initClass {
 		all = ();
@@ -64,13 +63,8 @@ CVCenterKeyboardRecorder {
 								keyboard.synthParams[sd].velocControl,
 								veloc * 0.005,
 								keyboard.synthParams[sd].outControl,
-								// FIXME: this should probably be this.out, shouldn't it?
-								// synthParams[synthDefName].out
 								keyboard.out;
 							];
-							// FIXME: Does argsValues need to be created individually for every SynthDef
-							// sampleEvents should expose the synth?
-							// Always need to have valuePairs for all Synths prepared?
 							argsValues = kbArgs ++ keyboard.valuePairs[sd];
 
 							argsValues.pairsDo { |k, v|
@@ -133,7 +127,7 @@ CVCenterKeyboardRecorder {
 
 	record { |onOff|
 		var synthDefNames, synthParams;
-		var pbproxy, pbinds, /*name,*/ /*group, */last, items/*, index*/;
+		var pbproxy, pbinds, last, items;
 		var ampWdgtName, pauseWdgtName, removeWdgtName;
 
 		synthDefNames = keyboard.currentSynthDef;
@@ -193,7 +187,6 @@ CVCenterKeyboardRecorder {
 		var ampWdgtName = "[%] % amp".format(keyboard.keyboardDefName, name).asSymbol;
 		var pauseWdgtName = "[%] % pause".format(keyboard.keyboardDefName, name ).asSymbol;
 		var removeWdgtName = "[%] % remove".format(keyboard.keyboardDefName, name).asSymbol;
-		// "ampWdgtName: %\npauseWdgtName: %\nremoveWdgtName: %".format(ampWdgtName, pauseWdgtName, removeWdgtName).postln;
 		fork({
 			"count: %".format(cSample).postln;
 			CVCenter.use(ampWdgtName, \amp, 1.0, tab: "player: %".format(keyboard.keyboardDefName).asSymbol);
@@ -215,9 +208,6 @@ CVCenterKeyboardRecorder {
 				}
 			);
 			keyboard.touchOSC !? {
-				// "\nbefore: usedTracks: %\ntOSCtrackNums: %\n".format(usedTracks, tOSCtrackNums).postln;
-				// "SynthDef: % (count: %)\nampWdgtName: %\npauseWdgtName: %\nremoveWdgtName: %\ntOSCtrackNums[0]: %".format(synthDef, tOSCCount, ampWdgtName, pauseWdgtName, removeWdgtName, tOSCtrackNums[0]).postln;
-				"keyboard.touchOSC.seqNameCmds[tOSCtrackNums[0]]: %".format(keyboard.touchOSC.seqNameCmds[tOSCtrackNums[0]]).postln;
 				keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[tOSCtrackNums[0]], name);
 				keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[tOSCtrackNums[0]], 1.0);
 				CVCenter.cvWidgets[ampWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqAmpCmds[tOSCtrackNums[0]]);
@@ -225,7 +215,6 @@ CVCenterKeyboardRecorder {
 				CVCenter.cvWidgets[removeWdgtName].oscConnect(keyboard.touchOSC.addr.ip, name: keyboard.touchOSC.seqRemoveCmds[tOSCtrackNums[0]]);
 				usedTracks.put(name, tOSCtrackNums[0]);
 				tOSCtrackNums.removeAt(0);
-				// "\nafter: usedTracks: %\ntOSCtrackNums: %\n".format(usedTracks, tOSCtrackNums).postln;
 			};
 			this.prAddCVActions(synthDef, name);
 			// tOSCCount = tOSCCount + 1;
@@ -291,13 +280,11 @@ CVCenterKeyboardRecorder {
 				};
 				keyboard.touchOSC !? {
 					"resetting TouchOSC sequence display at index %".format(i).inform;
-					// "\nbefore removal: usedTracks: %\ntOSCtrackNums: %\n".format(usedTracks, tOSCtrackNums).postln;
 					keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqNameCmds[usedTracks[k]].postln, "");
 					keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqAmpCmds[usedTracks[k]].postln, 0.0);
 					keyboard.touchOSC.addr.sendMsg(keyboard.touchOSC.seqPauseResumeCmds[usedTracks[k]].postln, 0.0);
 					tOSCtrackNums = tOSCtrackNums.add(keyboard.touchOSC.class.trackNums[i]);
 					usedTracks[k] = nil;
-					// "\nafter removal: usedTracks: %\ntOSCtrackNums: %\n".format(usedTracks, tOSCtrackNums).postln;
 				};
 				fork({
 					"removing CVCenter widget '[%] % amp'".format(keyboard.keyboardDefName, k).inform;
