@@ -6,13 +6,15 @@ related:: Classes/CVCenter, Guides/UsingMIDI, Classes/CVCenterKeyboardRecorder
 DESCRIPTION::
 A CVCenterKeyboard consists of a collection of SynthDefs and provides a convenient way to play them on a MIDI keyboard.
 
-CVCenterKeyboard lets you create a link::Guides/UsingMIDI#Playing notes on your MIDI keyboard#MIDI keyboard:: layout instantly from any link::Classes/SynthDef:: that provides a code::\gate:: key, meaning that a link::Classes/Synth:: that has been instanced upon receiving a note-on message gets finished when it gets a not-off message from an external MIDI keyboard. That allows for playing sustained notes that can be controlled through code::asr:: or code::adsr:: envelopes. A SynthDef with a "gated" envelope should answer code::true:: on executing the following line:
+CVCenterKeyboard lets you create a link::Guides/UsingMIDI#Playing notes on your MIDI keyboard#MIDI keyboard:: layout instantly from either a link::Classes/SynthDef:: whose instances emphasis::free themselves:: (e.g. for percussive instruments having an envelop defined in an link::Classes/EnvGen:: that has the parameter code::doneAction:: set to code::2:: or link::Classes/Done#*freeSelf#Done.freeSelf::) emphasis::or:: a link::Classes/SynthDef:: that provides a code::\gate:: key, meaning that a link::Classes/Synth:: that has been instanced upon receiving a note-on message gets finished when it gets a not-off message from an external MIDI keyboard. That allows for playing sustained notes that can be controlled through code::asr:: or code::adsr:: envelopes. A SynthDef with a "gated" envelope should answer code::true:: on executing the following line:
 
 code::
 SynthDescLib.at(yourSynthDefName).hasGate;
 ::
 
-Beyond the just explained procedure you may add an arbitrary number of other SynthDefs. You may switch between these SynthDefs by calling link::#-setSynthDef::. Playing the keyboard should immediately play generated nodes using the selected SynthDef.
+warning::If the link::Classes/Synth::s that get created from your link::Classes/SynthDef::s do not free themselves or get freed upon code::NoteOn:: messages they will clog the server, eventually making it unresponsive!::
+
+Beyond the that you may add an arbitrary number of other SynthDefs. You may switch between these link::Classes/SynthDef::s or play more than one at a time by calling link::#-setSynthDef::. Playing the keyboard should immediately play generated nodes using the selected link::Classes/SynthDef::s.
 
 Setting up the keyboard basically involves two steps: First instancing a keyboard (through link::#*new:: or link::#*newSynthDef::) and then setting up the keyboard for a given link::Classes/SynthDef:: through link::#-setUpControls:: (will boot the link::Classes/Server::).
 
@@ -22,7 +24,7 @@ DEFINITIONLIST::
 ## outControl
 || the arg that sets the output bus of the Synth
 ## keyboardControl
-|| whatever you want to play with your keyboard (e.g. Frequency). You'll get midi notes back
+|| whatever melody you want to play with your keyboard, often expressed in a parameter code::\freq:: (Hertz). note::A MIDI keyboard by default will return MIDI notes (code::0-127::). These will be converted to frequencies in Hertz internally.::
 ## velocControl
 || whatever you want to control through keyboard velocity
 ## bendControl
