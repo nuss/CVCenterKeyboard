@@ -1,4 +1,4 @@
-CVCenterKeyboard is a [SuperCollider](https://github.com/supercollider/supercollider) extension to the [CVCenter](https://github.com/nuss/CVCenter) library that models one or more MIDI keyboard(s). It allows playing one or more different [SynthDefs](https://pustota.basislager.org/_/sc-help/Help/Classes/SynthDef.html) in one keyboard definition. 
+CVCenterKeyboard is a [SuperCollider](https://github.com/supercollider/supercollider) extension to the [CVCenter](https://github.com/nuss/CVCenter) library that models one or more MIDI keyboard(s). It allows playing one or more different [SynthDefs](https://pustota.basislager.org/_/sc-help/Help/Classes/SynthDef.html) in one [keyboard definition](https://pustota.basislager.org/_/sc-help/Help/Classes/CVCenterKeyboard.html). 
 
 ## Example
 ```supercollider

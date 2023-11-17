@@ -253,6 +253,7 @@ to eight keys for the first SynthDef and 16 keys for the second SynthDef. If the
 code::
 // should result in 4 keys for the first SynthDef and 8 keys for the second
 ~kb.keysBlockSize_(12)
+~kb.keysDistribution // [4.0, 8.0] - adapted automatically
 ::
 
 If code::ratios:: sums up to an even number and link::#-keysBlockSize:: is set to an odd number, the ratio of the number of keys will be approximated.
