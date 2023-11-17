@@ -12,7 +12,7 @@ code::
 SynthDescLib.at(yourSynthDefName).hasGate;
 ::
 
-warning::If the link::Classes/Synth::s that get created from your link::Classes/SynthDef::s do not free themselves or get freed upon code::NoteOn:: messages they will clog the server, eventually making it unresponsive!::
+warning::If the link::Classes/Synth::s that get created from your link::Classes/SynthDef::s do not free themselves or get freed upon code::MIDI NoteOff:: messages they will clog the server, eventually making it unresponsive!::
 
 Beyond the that you may add an arbitrary number of other SynthDefs. You may switch between these link::Classes/SynthDef::s or play more than one at a time by calling link::#-setSynthDef::. Playing the keyboard should immediately play generated nodes using the selected link::Classes/SynthDef::s.
 
@@ -31,10 +31,11 @@ DEFINITIONLIST::
 || whatever you want to control through the pitch bend wheel (the internal control will automatically assigned a spec code::ControlSpec(0.midicps.neg, 0.midicps, \lin, 0, 0, " hz")::)
 ::
 
+note::To set up a CVCenterKeyboard instance with a link::Classes/SynthDef:: you will either have to create a new CVCenterKeyboard by calling link::#*newSynthDef#CVCenterKeyboard.newSynthDef:: (adding the link::Classes/SynthDef:: as an argument) and then call link::#-setUpControls:: or, if the CVCenterKeyboard instance already exists, first add your link::Classes/SynthDef:: by calling link::#-addSynthDef:: and then call link::#-setUpControls::.::
+
 All other controls you may have defined in your SynthDef will automatically be picked up by the setup process and get assigned appropriate widgets automatically.
 
-NOTE:: Differently to normal usage within CVCenter the link::Classes/Synth:: instances created by playing the keyboard are addressed anonymously when setting their controls. I.e. the Synths are not assigned to a variable which serves as the reference to the Synth instance when setting a control. That means you can use controls of the same name within more than one SynthDef and they will be considered within every playing Synth instance. However, you should think about the link::Classes/ControlSpec::s for your controls beforehand. E.g. if you have an argument code::\freq:: in two different SynthDefs and one should have a range of 20-20000 and the other one 20-4000 the range of the argument that has been created first will take precendence over the second (even if there is more than one widget setting a control code::\freq:: in CVCenter all these widgets will set any control named code::\freq::).
-::
+NOTE::All link::Classes/Synth::s generated from your link::Classes/SynthDef::s will play in one link::Classes/Group:: (or, if link::Classes/Server#*supernova#supernova:: is used as audio backend, link::Classes/ParGroup::). That means arguments with the same name across different link::Classes/SynthDef::s will always get set to the same value. That may be desired e.g. for the frequency you're playing over the keyboard but probably not for others that e.g. get set through a knob or a slider. strong::So, take special care for duplicate argument names in your:: link::Classes/SynthDef::s!::
 
 Additionally an output proxy - a link::Classes/NodeProxy:: or an link::Classes/Ndef:: - can be added through link::#-addOutProxy:: which allows you to build an effects chain and to do other kinds of NodeProxy trickery.
 
