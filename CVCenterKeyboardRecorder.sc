@@ -129,6 +129,7 @@ CVCenterKeyboardRecorder {
 		var synthDefNames, synthParams;
 		var pbproxy, pbinds, last, items;
 		var ampWdgtName, pauseWdgtName, removeWdgtName;
+		var name, index;
 
 		synthDefNames = keyboard.currentSynthDef;
 
@@ -164,7 +165,6 @@ CVCenterKeyboardRecorder {
 					}
 				}.takeThese(_.isNil);
 				if (pbinds.notEmpty) {
-					var name, index;
 					name = (sd ++ "-" ++ cSample).asSymbol;
 					Ndef(name).mold(2, \audio, \elastic);
 					Ndef(name)[0] = Pdef(name, Ppar(pbinds, inf));
