@@ -466,7 +466,7 @@ CVCenterKeyboard {
 			this.out_(transbus)
 		};
 		outProxy.source = {
-			In.ar(this.out, numChannels)
+			In.ar(outbus, numChannels)
 		};
 		outProxy.play(outbus);
 	}
