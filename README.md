@@ -46,7 +46,7 @@ Spec.add(\which, #[0, 2]);
 
 // after confirmation play the keyboard...
 ```
-For detailed information look at the [helpfile](https://pustota.basislager.org/_/sc-help/Help/Classes/CVCenterKeyboard.html)
+For detailed information look at the [documentation](https://schelp.basislager.org/Overviews/CVCenterKeyboard.html)
 
 ## Installation
 Prerequesits:
